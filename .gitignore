@@ -2,3 +2,4 @@ archive/
 certificates/
 
 flake.lock
+opcua-browser

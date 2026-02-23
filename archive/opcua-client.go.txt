@@ -1,0 +1,80 @@
+	package main
+
+
+	ctx = context.Background()
+
+	endpoints, err := opcua.GetEndpoints(ctx, endpoint)
+	if err != nil {
+		log.Println(err)
+	}
+	ep, err := opcua.SelectEndpoint(endpoints, policy, ua.MessageSecurityModeFromString(mode))
+	if err != nil {
+		log.Println(err)
+	}
+	ep.EndpointURL = endpoint
+
+	opts := []opcua.Option{
+		opcua.SecurityPolicy(policy),
+		opcua.SecurityModeString(mode),
+		opcua.CertificateFile(certFile),
+		opcua.PrivateKeyFile(keyFile),
+		opcua.AuthUsername("boschrexroth", "boschrexroth"),
+		opcua.SecurityFromEndpoint(ep, ua.UserTokenTypeUserName),
+	}
+
+	m.client, _ = opcua.NewClient(ep.EndpointURL, opts...)
+
+	if err := m.client.Connect(m.ctx); err != nil {
+		log.Fatal(err)
+	}
+	// defer m.client.Close(m.ctx)
+
+	id, err := ua.ParseNodeID(nodeID)
+	if err != nil {
+		log.Fatalf("invalid node id: %s", err)
+	}
+	fmt.Println(id)
+
+	refs, err := m.client.Node(id).ReferencedNodes(m.ctx, 0, ua.BrowseDirectionForward, ua.NodeClassAll, true)
+
+	fmt.Println(refs)
+	
+
+// m.ctx = context.Background()
+
+	endpoints, err := opcua.GetEndpoints(ctx, endpoint)
+	if err != nil {
+		log.Println(err)
+	}
+	ep, err := opcua.SelectEndpoint(endpoints, policy, ua.MessageSecurityModeFromString(mode))
+	if err != nil {
+		log.Println(err)
+	}
+	ep.EndpointURL = endpoint
+
+	opts := []opcua.Option{
+		opcua.SecurityPolicy(policy),
+		opcua.SecurityModeString(mode),
+		opcua.CertificateFile(certFile),
+		opcua.PrivateKeyFile(keyFile),
+		opcua.AuthUsername("boschrexroth", "boschrexroth"),
+		opcua.SecurityFromEndpoint(ep, ua.UserTokenTypeUserName),
+	}
+
+	m.client, _ = opcua.NewClient(ep.EndpointURL, opts...)
+
+	if err := m.client.Connect(m.ctx); err != nil {
+		log.Fatal(err)
+	}
+	// defer m.client.Close(m.ctx)
+
+	id, err := ua.ParseNodeID(nodeID)
+	if err != nil {
+		log.Fatalf("invalid node id: %s", err)
+	}
+	fmt.Println(id)
+
+	refs, err := m.client.Node(id).ReferencedNodes(m.ctx, 0, ua.BrowseDirectionForward, ua.NodeClassAll, true)
+
+	fmt.Println(refs)
+	

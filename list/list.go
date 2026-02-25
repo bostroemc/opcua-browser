@@ -13,8 +13,8 @@ import (
 
 func New(id int, read chan types.OpcUaReadData, write chan types.DataPoint, data []types.DataPoint, update_rate int) Model {
 	input := textinput.New()
-	input.Placeholder = " "
-	input.Prompt = "┃ "
+	input.Placeholder = ""
+	input.Prompt = "┃"
 	input.CharLimit = 40
 
 	return Model{Id: id, read: read, write: write, Data: data, UpdateRate: update_rate, Styles: types.DefaultStyles(), Input: input} //
@@ -50,21 +50,9 @@ func (m Model) Init() tea.Cmd {
 func (m Model) View() string {
 	var s strings.Builder
 	for i, l := range m.Data {
-
 		node := nodeStyle.Render(l.Node)
 
 		var value string
-		// if m.EditMode {
-		// 	value = editStyle.Render(m.Input.View())
-		// } else {
-		// 	value = valueStyle.Render(l.String())
-		// }
-		// value := valueStyle.Render(l.String())
-
-		// if gapWidth < 0 {
-		// 	gapWidth = 0
-		// }
-		// gap := strings.Repeat(" ", gapWidth)
 
 		if m.Active == m.Id && m.index == i {
 			if m.EditMode {
@@ -92,9 +80,6 @@ func (m Model) View() string {
 			s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, node, gap, value) + "\n")
 		}
 	}
-
-	// edit_field := editStyle.Render(m.Input.View())
-	// s.WriteString(edit_field)
 
 	if m.Active == m.Id {
 		m.Styles.ActiveBody = m.Styles.ActiveBody.Width(m.Width).Height(m.Height)

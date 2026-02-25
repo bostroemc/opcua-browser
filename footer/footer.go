@@ -73,18 +73,18 @@ func (m Model) View() string {
 }
 
 var footerStyle = lipgloss.NewStyle().
-	Background(lipgloss.Color("#89B4FA")). //Light blue see cattpuchin.com >> mocha
-	Foreground(lipgloss.Color("#181825")). // White
+	Background(lipgloss.Color("#89B4FA")). //TODO: move to package types
+	Foreground(lipgloss.Color("#181825")).
 	Padding(0, 1).
 	BorderTop(false)
 
 var endpointStyle = lipgloss.NewStyle().
-	Background(lipgloss.Color("#89B4FA")). //Light blue
-	Foreground(lipgloss.Color("#181825")). // White
+	Background(lipgloss.Color("#89B4FA")).
+	Foreground(lipgloss.Color("#181825")).
 	Padding(0, 1).
 	Align(lipgloss.Right)
 var symbolStyle = lipgloss.NewStyle().
-	Background(lipgloss.Color("#333333")). //Light blue
-	Foreground(lipgloss.Color("#FFFFFF")). // White
+	Background(lipgloss.Color("#333333")).
+	Foreground(lipgloss.Color("#FFFFFF")).
 	Padding(0, 1).
 	Align(lipgloss.Center)

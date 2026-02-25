@@ -39,8 +39,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "quit":
 				m.quitting = true
 				return m, tea.Quit
-			case "toggle_edit_mode":
-				m.list.EditMode = !m.list.EditMode
+			// case "toggle_edit_mode":
+			// m.list.EditMode = !m.list.EditMode
 			case "toggle_autoupdate":
 				m.list.Autoupdate = !m.list.Autoupdate
 			case "push":

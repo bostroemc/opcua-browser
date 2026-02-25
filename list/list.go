@@ -13,7 +13,7 @@ import (
 
 func New(id int, read chan types.OpcUaReadData, write chan types.DataPoint, data []types.DataPoint, update_rate int) Model {
 	input := textinput.New()
-	input.Placeholder = "..."
+	input.Placeholder = " "
 	input.Prompt = "┃ "
 	input.CharLimit = 40
 
@@ -134,6 +134,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 					m.index = min(m.index, len(m.Data)-1)
 					m.index = max(m.index, 0)
+				}
+			case "toggle_edit_mode":
+				m.EditMode = !m.EditMode
+				if m.EditMode {
+					m.Input.SetValue(m.Data[m.index].String())
 				}
 			case "select":
 				if m.EditMode {

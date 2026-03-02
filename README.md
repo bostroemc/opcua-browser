@@ -5,7 +5,7 @@ This project is currently in pre-alpha status
 
 Sample configuration file:
 
-config.yaml
+$HOME/.config/opcua-browser/config.yaml
 
 ```yaml
 server:
@@ -43,8 +43,6 @@ keybinds:
     keys: ["enter", "right"]
   - action: "back"
     keys: ["u", "left"]
-
-
 
   # shortcuts
   - action: "root"

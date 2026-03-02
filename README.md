@@ -7,6 +7,7 @@ Sample configuration file:
 
 config.yaml
 
+```yaml
 server:
   endpoint: "opc.tcp://192.168.100.101:4840"
   policy: "Basic256Sha256"
@@ -54,3 +55,4 @@ keybinds:
     keys: ["f"]
     params:
       nodeid: "ns=8;s=plc/app/Application/sym"
+```

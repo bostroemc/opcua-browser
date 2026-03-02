@@ -3,8 +3,8 @@ package browser
 import (
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/bostroemc/tui/opcua-browser/types"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/gopcua/opcua/ua"
 )
 
@@ -39,7 +39,7 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if m.Active != m.Id {
 			break
 		}

@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/bostroemc/tui/opcua-browser/types"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 func New(id int, read chan types.OpcUaReadData, write chan types.DataPoint, data []types.DataPoint, update_rate int) Model {
@@ -61,7 +61,7 @@ func (m Model) View() string {
 				value = valueStyle.Render(l.String())
 			}
 
-			gapWidth := m.Width - lipgloss.Width(node) - lipgloss.Width(value) - 0
+			gapWidth := m.Width - lipgloss.Width(node) - lipgloss.Width(value) - 2
 			if gapWidth < 0 {
 				gapWidth = 0
 			}
@@ -71,7 +71,7 @@ func (m Model) View() string {
 		} else {
 			value := valueStyle.Render(l.String())
 
-			gapWidth := m.Width - lipgloss.Width(node) - lipgloss.Width(value) - 0
+			gapWidth := m.Width - lipgloss.Width(node) - lipgloss.Width(value) - 2
 			if gapWidth < 0 {
 				gapWidth = 0
 			}
@@ -93,7 +93,7 @@ func (m Model) View() string {
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if m.Active != m.Id {
 			m.EditMode = false
 			break

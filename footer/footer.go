@@ -3,9 +3,9 @@ package footer
 import (
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/bostroemc/tui/opcua-browser/types"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 func New(endpoint string) Model {
@@ -42,7 +42,7 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if !m.EditMode {
 			break
 		}
@@ -52,7 +52,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			case "select":
 			}
 		}
-
 	}
 
 	return m, nil

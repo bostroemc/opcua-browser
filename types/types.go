@@ -148,11 +148,6 @@ type Authorization struct {
 	Password    string `yaml:"password"`
 }
 
-//	type Keybinds struct {
-//		Global     []keybind `yaml:"global"`
-//		Navigation []keybind `yaml:"navigation"`
-//		List       []keybind `yaml:"list"`
-//	}
 type Config struct {
 	Server        Server        `yaml:"server"`
 	Authorization Authorization `yaml:"authorization"`
@@ -173,11 +168,6 @@ type KeyAction struct { //used to create map: keyActions map[string]types.KeyAct
 	Action string
 	Params *Params
 }
-
-// type KeyAction struct {
-// 	Action func(params ...*Params) (tea.Model, tea.Cmd)
-// 	Params *Params
-// }
 
 func (c *Config) Init() {
 	home, _ := os.UserHomeDir()

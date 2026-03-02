@@ -4,12 +4,12 @@ import (
 	"strings"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	browser "github.com/bostroemc/tui/opcua-browser/browser"
 	"github.com/bostroemc/tui/opcua-browser/footer"
 	list "github.com/bostroemc/tui/opcua-browser/list"
 	"github.com/bostroemc/tui/opcua-browser/types"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
@@ -33,14 +33,12 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if keyAction, ok := types.KeyActions[msg.String()]; ok {
 			switch keyAction.Action {
 			case "quit":
 				m.quitting = true
 				return m, tea.Quit
-			// case "toggle_edit_mode":
-			// m.list.EditMode = !m.list.EditMode
 			case "toggle_autoupdate":
 				m.list.Autoupdate = !m.list.Autoupdate
 			case "push":
@@ -56,8 +54,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
-		m.browser.SetView(m.height-4, m.width-4)
-		m.list.SetView(m.height-4, m.width-4)
+		m.browser.SetView(m.height-2, m.width)
+		m.list.SetView(m.height-2, m.width)
 	}
 
 	//Distribute state (i.e. active window) to the underlying modules
@@ -78,15 +76,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmd[0], cmd[1], cmd[2])
 }
 
-func (m model) View() string {
+func (m model) View() tea.View {
 	if m.quitting {
-		return ""
+		return tea.NewView("")
 	}
 	var s strings.Builder
 	s.WriteString(" rymden software\n")
 	s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, m.browser.View(), m.list.View()) + "\n")
 	s.WriteString(m.footer.View())
-	return s.String()
+
+	v := tea.NewView(s.String())
+	v.AltScreen = true
+	return v
 }
 
 func main() {
@@ -106,5 +107,5 @@ func main() {
 
 	time.Sleep(1000 * time.Millisecond) //wait for OPC UA service connection
 
-	_, _ = tea.NewProgram(&m, tea.WithAltScreen()).Run()
+	_, _ = tea.NewProgram(m).Run()
 }

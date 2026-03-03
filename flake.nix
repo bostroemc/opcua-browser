@@ -23,7 +23,7 @@
         devShells.default = pkgs.mkShell {
           # Include Go and any C libraries needed by CGO
           buildInputs = with pkgs; [
-            go
+            go_1_26
             # Example C dependencies for a project using cgo with sqlite
             pkg-config
             sqlite

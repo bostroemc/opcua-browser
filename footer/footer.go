@@ -9,13 +9,7 @@ import (
 )
 
 func New(endpoint string) Model {
-	// ta := textinput.New()
-	// ta.Placeholder = "..."
-	// ta.Prompt = "┃ "
-	// ta.CharLimit = 40
-	//
 	return Model{
-		// Input:    ta,
 		Endpoint: endpoint,
 	}
 
@@ -29,11 +23,6 @@ type Model struct {
 	DataPoint types.DataPoint
 
 	EditMode bool
-	// Input    textinput.Model
-
-	// write chan types.DataPoint
-	// message *string
-	// viewport viewport.Model
 }
 
 func (m Model) Init() tea.Cmd {

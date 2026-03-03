@@ -17,7 +17,7 @@ type model struct {
 	browser browser.Model
 	list    list.Model
 	footer  footer.Model
-	// activeNode   types.Node
+
 	path     string
 	quitting bool
 	err      error

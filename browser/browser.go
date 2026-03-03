@@ -89,66 +89,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 		}
 
-		// if m.Active == m.Id && msg.String() == "j" || msg.String() == "down" {
-		// 	m.index++
-		// 	m.index = min(m.index, len(m.Children)-1)
-		// 	m.SetMinMax(m.min, m.max)
-		// }
-		// if m.Active == m.Id && msg.String() == "k" || msg.String() == "up" {
-		// 	m.index--
-		// 	m.index = max(m.index, 0)
-		// 	m.SetMinMax(m.min, m.max)
-		// }
-		// if msg.String() == "h" {
-		// }
-		// if msg.String() == "l" {
-		// }
-		// if m.Active == m.Id && msg.String() == "enter" || msg.String() == "right" {
-		// 	if len(m.Children) == 0 {
-		// 		break
-		// 	}
-		// 	m.Path = m.Children[m.index].NodeID.String()
-		//
-		// 	m.stack.Push(m.Node)
-		// 	m.Node = m.Children[m.index].NodeID
-		//
-		// 	m.browse <- types.OpcUaBrowserData{Node: m.Node}
-		// 	m.index = 0
-		// 	m.max = max(m.max, m.Height-1)
-		// 	m.SetMinMax(m.min, m.max)
-		// }
-		// if m.Active == m.Id && msg.String() == "r" { //go to root level
-		// 	m.stack.Clear()
-		// 	m.index = 0
-		// 	m.Path = "i=84"
-		// 	m.Node, _ = ua.ParseNodeID(m.Path)
-		// 	m.browse <- types.OpcUaBrowserData{Node: m.Node}
-		//
-		// 	m.SetMinMax(m.min, m.max)
-		// }
-		// if m.Active == m.Id && msg.String() == "f" { //go to favorite
-		// 	m.stack.Clear()
-		// 	m.index = 0
-		// 	m.Path = "ns=8;s=plc/app/Application/sym"
-		// 	m.Node, _ = ua.ParseNodeID(m.Path)
-		// 	m.browse <- types.OpcUaBrowserData{Node: m.Node}
-		//
-		// 	m.SetMinMax(m.min, m.max)
-		// }
-		// if m.Active == m.Id && msg.String() == "u" || msg.String() == "left" { //go to previous node (think: back button...)
-		// 	id := m.stack.Pop()
-		// 	if id == nil {
-		// 		break
-		// 	}
-		// 	m.index = 0
-		// 	m.Node = id
-		// 	m.Path = id.String()
-		// 	m.browse <- types.OpcUaBrowserData{Node: id}
-		// 	m.SetMinMax(m.min, m.max)
-		// }
-	// case tea.WindowSizeMsg:
-	// 	m.height = msg.Height
-	// 	m.width = msg.Width
 	case browseMsg:
 		m.Parent = msg.Parent
 		m.Children = msg.Children
@@ -173,10 +113,6 @@ func (m Model) View() string {
 		}
 
 	}
-	// s.WriteString(m.stack.Peek() + " " + strconv.Itoa(m.min) + " " + strconv.Itoa(m.max) + " " + strconv.Itoa(m.Height) + "\n")
-
-	// m.Styles.Body = m.Styles.Body.Width(m.Width).Height(m.Height)
-	// return m.Styles.Body.Render(s.String())
 
 	if m.Active == m.Id {
 		m.Styles.ActiveBody = m.Styles.ActiveBody.Width(m.Width).Height(m.Height)

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/bostroemc/tui/opcua-browser/types"
 	"github.com/gopcua/opcua/ua"
 )
@@ -116,11 +117,11 @@ func (m Model) View() string {
 
 	if m.Active == m.Id {
 		m.Styles.ActiveBody = m.Styles.ActiveBody.Width(m.Width).Height(m.Height)
-		return m.Styles.ActiveBody.Render(s.String())
+		return lipgloss.JoinVertical(lipgloss.Left, m.Styles.ActiveTitle.Render(" address space"), m.Styles.ActiveBody.Render(s.String()))
 	}
 
 	m.Styles.Body = m.Styles.Body.Width(m.Width).Height(m.Height)
-	return m.Styles.Body.Render(s.String())
+	return lipgloss.JoinVertical(lipgloss.Left, m.Styles.Title.Render(" address space"), m.Styles.Body.Render(s.String()))
 
 }
 func initCmd(browse chan types.OpcUaBrowserData) tea.Cmd {

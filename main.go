@@ -82,7 +82,7 @@ func (m model) View() tea.View {
 		return tea.NewView("")
 	}
 	var s strings.Builder
-	s.WriteString(" rymden software\n")
+	// s.WriteString(" rymden software\n")
 	s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, m.browser.View(), m.list.View()) + "\n")
 	s.WriteString(m.footer.View())
 

@@ -83,11 +83,11 @@ func (m Model) View() string {
 
 	if m.Active == m.Id {
 		m.Styles.ActiveBody = m.Styles.ActiveBody.Width(m.Width).Height(m.Height)
-		return m.Styles.ActiveBody.Render(s.String())
+		return lipgloss.JoinVertical(lipgloss.Left, m.Styles.ActiveTitle.Render(" data access view"), m.Styles.ActiveBody.Render(s.String()))
 	}
 
 	m.Styles.Body = m.Styles.Body.Width(m.Width).Height(m.Height)
-	return m.Styles.Body.Render(s.String())
+	return lipgloss.JoinVertical(lipgloss.Left, m.Styles.Title.Render(" data access view"), m.Styles.Body.Render(s.String()))
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {

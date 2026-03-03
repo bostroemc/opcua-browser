@@ -169,7 +169,7 @@ type KeyAction struct { //used to create map: keyActions map[string]types.KeyAct
 	Params *Params
 }
 
-func (c *Config) Init() {
+func (c *Config) Init(username, password *string) {
 	home, _ := os.UserHomeDir()
 	f, _ := os.ReadFile(home + "/.config/opcua-browser/config.yaml")
 
@@ -182,5 +182,13 @@ func (c *Config) Init() {
 		for _, k := range b.Keys {
 			KeyActions[k] = KeyAction{Action: b.Action, Params: b.Params}
 		}
+	}
+
+	//Use username, password flags if supplied
+	if *username != "" {
+		c.Authorization.Username = *username
+	}
+	if *password != "" {
+		c.Authorization.Password = *password
 	}
 }

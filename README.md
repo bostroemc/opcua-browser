@@ -16,8 +16,8 @@ server:
 authorization:
   certificate: "<path>" # absolute path to certificate file (*.pem)
   key: "<path>" # absolute path to private key (*.pem)
-  username: "<username>" # username may alse be passed to executable as flag: ./opcua-browser -username="username"
-  password: "<password>" # password may also be passed to executable as flag:  ./opcua-browser -password="****" (preferred)
+  username: "<username>" # username may alse be passed as flag: ./opcua-browser -username="username"
+  password: "<password>" # password may also be passed as flag:  ./opcua-browser -password="****" (preferred)
 
 update_rate: 500 # update rate in milliseconds
 

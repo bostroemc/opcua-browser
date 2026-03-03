@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"strings"
 	"time"
 
@@ -91,7 +92,11 @@ func (m model) View() tea.View {
 }
 
 func main() {
-	types.MyConfig.Init()
+	username := flag.String("username", "", "User credentials for OPC UA server")
+	password := flag.String("password", "", "User credentials for OPC UA server")
+	flag.Parse()
+
+	types.MyConfig.Init(username, password)
 
 	ch_browse := make(chan types.OpcUaBrowserData)
 	ch_read := make(chan types.OpcUaReadData)

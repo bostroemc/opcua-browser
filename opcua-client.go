@@ -19,7 +19,7 @@ func opcuaClient(config types.Config, browse chan types.OpcUaBrowserData, read c
 	}
 	ep, err := opcua.SelectEndpoint(endpoints, config.Server.Policy, ua.MessageSecurityModeFromString(config.Server.Mode))
 	if err != nil {
-		log.Println(err)
+		log.Fatalln("SelectEndpoint failed: ", err)
 		return
 	}
 	ep.EndpointURL = config.Server.Endpoint
@@ -39,7 +39,7 @@ func opcuaClient(config types.Config, browse chan types.OpcUaBrowserData, read c
 		log.Println(err)
 	}
 	if err := c.Connect(ctx); err != nil {
-		log.Println(err)
+		log.Fatalln("Failed to connect to OPC UA server: ", err)
 	}
 
 	// defer c.Close(ctx)  //TODO figure out how to Close properly...

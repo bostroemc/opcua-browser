@@ -14,8 +14,8 @@ server:
   mode: "SignAndEncrypt"
 
 authorization:
-  certificate: "/home/bostroemc/go/src/github.com/bostroemc/tui/opcua-browser/certificates/rymden-software.certificate.pem" # path to certificate file
-  key: "/home/bostroemc/.ssh/private/rymden-software.private.key.pem" # path to private key
+  certificate: "<path>" # absolute path to certificate file (*.pem)
+  key: "<path>" # absolute path to private key (*.pem)
   username: "<username>" # username may alse be passed to executable as flag: ./opcua-browser -username="username"
   password: "<password>" # password may also be passed to executable as flag:  ./opcua-browser -password="****" (preferred)
 

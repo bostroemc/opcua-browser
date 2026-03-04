@@ -17,6 +17,12 @@ func New(id int, read chan types.OpcUaReadData, write chan types.DataPoint, data
 	input.Prompt = "┃"
 	input.CharLimit = 40
 
+	s := input.Styles()
+	s.Focused.Text = lipgloss.NewStyle().Foreground(lipgloss.Color("#FCAA95")).Bold(true)
+	s.Focused.Prompt = lipgloss.NewStyle().Foreground(lipgloss.Color("#FCAA95"))
+	s.Cursor.Color = lipgloss.Color("#FCAA95")
+
+	input.SetStyles(s)
 	return Model{Id: id, read: read, write: write, Data: data, UpdateRate: update_rate, Styles: types.DefaultStyles(), Input: input} //
 }
 
@@ -56,7 +62,7 @@ func (m Model) View() string {
 
 		if m.Active == m.Id && m.index == i {
 			if m.EditMode {
-				value = m.Styles.Edit.Render(m.Input.View())
+				value = m.Input.View()
 			} else {
 				value = valueStyle.Render(l.String())
 			}
@@ -178,7 +184,7 @@ func (m *Model) Increment() {
 }
 
 func (m *Model) SetView(height, width int) {
-	m.Height, m.Width = height, 3*width/4
+	m.Height, m.Width = height, width-width/4
 }
 
 func (m *Model) SetMinMax(minimum, maximum int) {

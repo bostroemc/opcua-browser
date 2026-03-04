@@ -55,8 +55,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
-		m.browser.SetView(m.height-2, m.width)
-		m.list.SetView(m.height-2, m.width)
+		m.browser.SetView(m.height-3, m.width)
+		m.list.SetView(m.height-3, m.width)
 	}
 
 	//Distribute state (i.e. active window) to the underlying modules

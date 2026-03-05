@@ -7,15 +7,15 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	browser "github.com/bostroemc/tui/opcua-browser/browser"
+	address "github.com/bostroemc/tui/opcua-browser/address"
+	data "github.com/bostroemc/tui/opcua-browser/data"
 	"github.com/bostroemc/tui/opcua-browser/footer"
-	list "github.com/bostroemc/tui/opcua-browser/list"
 	"github.com/bostroemc/tui/opcua-browser/types"
 )
 
 type model struct {
-	browser browser.Model
-	list    list.Model
+	address address.Model
+	data    data.Model
 	footer  footer.Model
 
 	path     string
@@ -29,7 +29,7 @@ type model struct {
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(m.browser.Init(), m.list.Init(), m.footer.Init())
+	return tea.Batch(m.address.Init(), m.data.Init(), m.footer.Init())
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -41,11 +41,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.quitting = true
 				return m, tea.Quit
 			case "toggle_autoupdate":
-				m.list.Autoupdate = !m.list.Autoupdate
+				m.data.Autoupdate = !m.data.Autoupdate
 			case "push":
 				if m.state == 0 {
-					m.list.Data = append(m.list.Data, types.DataPoint{Node: m.browser.ActiveNode().NodeID.String()})
-					m.list.Increment()
+					m.data.Data = append(m.data.Data, types.DataPoint{Node: m.address.ActiveNode().NodeID.String()})
+					m.data.Increment()
 				}
 
 			case "toggle_focus":
@@ -55,23 +55,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 		m.width = msg.Width
-		m.browser.SetView(m.height-3, m.width)
-		m.list.SetView(m.height-3, m.width)
+		m.address.SetView(m.height-3, m.width)
+		m.data.SetView(m.height-3, m.width)
 	}
 
 	//Distribute state (i.e. active window) to the underlying modules
-	m.browser.Active = m.state
-	m.list.Active = m.state
+	m.address.Active = m.state
+	m.data.Active = m.state
 
 	var cmd [3]tea.Cmd
 
-	m.browser, cmd[0] = m.browser.Update(msg)
-	m.list, cmd[1] = m.list.Update(msg)
-	m.list.DataPoint = m.list.ActiveDataPoint()
+	m.address, cmd[0] = m.address.Update(msg)
+	m.data, cmd[1] = m.data.Update(msg)
+	m.data.DataPoint = m.data.ActiveDataPoint()
 
 	m.footer, cmd[2] = m.footer.Update(msg)
-	m.footer.Status = m.list.Status
-	m.footer.Path = m.browser.Path
+	m.footer.Status = m.data.Status
+	m.footer.Path = m.address.Path
 	m.footer.Width = m.width
 
 	return m, tea.Batch(cmd[0], cmd[1], cmd[2])
@@ -83,7 +83,7 @@ func (m model) View() tea.View {
 	}
 	var s strings.Builder
 	// s.WriteString(" rymden software\n")
-	s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, m.browser.View(), m.list.View()) + "\n")
+	s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, m.address.View(), m.data.View()) + "\n")
 	s.WriteString(m.footer.View())
 
 	v := tea.NewView(s.String())
@@ -105,8 +105,8 @@ func main() {
 	go opcuaClient(types.MyConfig, ch_browse, ch_read, ch_write)
 
 	m := model{
-		browser: browser.New(0, ch_browse, "i=84"),
-		list:    list.New(1, ch_read, ch_write, []types.DataPoint{}, types.MyConfig.UpdateRate),
+		address: address.New(0, ch_browse, "i=84"),
+		data:    data.New(1, ch_read, ch_write, []types.DataPoint{}, types.MyConfig.UpdateRate),
 		footer:  footer.New(types.MyConfig.Server.Endpoint),
 	}
 

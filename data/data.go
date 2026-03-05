@@ -1,7 +1,8 @@
-package list
+package data //data access view
 
 import (
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -139,6 +140,13 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 					m.write <- s
 					m.EditMode = false
 					// m.Input.SetValue("")
+				}
+			case "toggle_boolean":
+				s := m.DataPoint
+
+				if v, ok := s.Value.(bool); ok {
+					s.SetPending(strconv.FormatBool(!v))
+					m.write <- s
 				}
 			}
 		}

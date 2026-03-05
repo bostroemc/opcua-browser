@@ -103,7 +103,6 @@ func opcuaClient(config types.Config, browse chan types.OpcUaBrowserData, read c
 		var resp *ua.ReadResponse
 		for {
 			a := <-read
-			// time.Sleep(5 * time.Second)
 
 			var Nodes []*ua.ReadValueID
 			for _, d := range a.Data {

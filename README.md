@@ -43,6 +43,8 @@ keybinds:
     keys: ["enter", "right"]
   - action: "back"
     keys: ["u", "left"]
+  - action: "toggle_boolean"
+    keys: ["ctrl+space"]
 
   # shortcuts
   - action: "root"

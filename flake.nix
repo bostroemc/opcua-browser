@@ -16,22 +16,21 @@
       system:
       let
         pkgs = import nixpkgs { inherit system; };
+        buildGoModule = pkgs.buildGoModule.override { go = pkgs.go_1_26; };
       in
       {
-        packages.default = pkgs.buildGoModule {
+        packages.default = buildGoModule {
           pname = "opcua-browser";
           version = "0.0.2";
           src = ./.;
 
-          go = pkgs.go_1_26;
-          vendorHash = "sha256-/URqW9ZgeWo22ucAyFwWzXUnBpBxYcgbwADsdIcJ2ZU=";
+          vendorHash = "sha256-QUOIY64FuDSb1AU55RGhj5ewlgexsKMRXRKwfcb+HlQ=";
         };
 
         # This makes the package accessible in a development shell
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             go_1_26
-
             pkg-config # C dependencies
             sqlite
           ];

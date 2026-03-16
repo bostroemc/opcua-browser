@@ -1,5 +1,5 @@
 {
-  description = "A Go development shell with CGO dependencies";
+  description = "Nix flake to package (locally) opcua-browser: OPC UA browser for the terminal";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -11,28 +11,32 @@
       self,
       nixpkgs,
       flake-utils,
-      ...
-    }@inputs:
+    }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = import nixpkgs { inherit system; };
-        # sourceFiles = ./.;
       in
       {
+        packages.default = pkgs.buildGoModule {
+          pname = "opcua-browser";
+          version = "0.0.2";
+          src = ./.;
+
+          go = pkgs.go_1_26;
+          vendorHash = "sha256-/URqW9ZgeWo22ucAyFwWzXUnBpBxYcgbwADsdIcJ2ZU=";
+        };
+
+        # This makes the package accessible in a development shell
         devShells.default = pkgs.mkShell {
-          # Include Go and any C libraries needed by CGO
           buildInputs = with pkgs; [
             go_1_26
-            # Example C dependencies for a project using cgo with sqlite
-            pkg-config
+
+            pkg-config # C dependencies
             sqlite
           ];
-
-          # Set environment variables if necessary, for example CGO_ENABLED=1 is default but good to be explicit
           CGO_ENABLED = 1;
 
-          # Optional: additional tools for development
           # nativeBuildInputs = with pkgs; [ git ];
         };
       }

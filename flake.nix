@@ -1,5 +1,5 @@
 {
-  description = "Nix flake to package (locally) opcua-browser: OPC UA browser for the terminal";
+  description = "Nix flake to package (locally) opcua-browser, an OPC UA browser for the terminal";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -16,12 +16,11 @@
       system:
       let
         pkgs = import nixpkgs { inherit system; };
-        buildGoModule = pkgs.buildGoModule.override { go = pkgs.go_1_26; };
       in
       {
-        packages.default = buildGoModule {
+        packages.default = pkgs.buildGoModule.override { go = pkgs.go_1_26; } {
           pname = "opcua-browser";
-          version = "0.0.2";
+          version = "0.0.3";
           src = ./.;
 
           vendorHash = "sha256-QUOIY64FuDSb1AU55RGhj5ewlgexsKMRXRKwfcb+HlQ=";

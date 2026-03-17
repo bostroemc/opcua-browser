@@ -21,6 +21,7 @@ type model struct {
 	path     string
 	quitting bool
 	err      error
+	info     bool
 
 	state int
 

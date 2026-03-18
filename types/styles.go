@@ -8,6 +8,7 @@ type Styles struct {
 	ActiveBody  lipgloss.Style
 	Title       lipgloss.Style
 	ActiveTitle lipgloss.Style
+	Overlay     lipgloss.Style
 }
 
 func DefaultStyles() Styles {
@@ -17,5 +18,6 @@ func DefaultStyles() Styles {
 		ActiveBody:  lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("255")),
 		Title:       lipgloss.NewStyle().Foreground(lipgloss.Color("244")).MarginTop(1).Italic(true),
 		ActiveTitle: lipgloss.NewStyle().Foreground(lipgloss.Color("255")).MarginTop(1).Italic(true),
+		Overlay:     lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("255")).Padding(0, 1),
 	}
 }

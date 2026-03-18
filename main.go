@@ -10,6 +10,7 @@ import (
 	address "github.com/bostroemc/tui/opcua-browser/address"
 	data "github.com/bostroemc/tui/opcua-browser/data"
 	"github.com/bostroemc/tui/opcua-browser/footer"
+	"github.com/bostroemc/tui/opcua-browser/overlay"
 	"github.com/bostroemc/tui/opcua-browser/types"
 )
 
@@ -17,6 +18,7 @@ type model struct {
 	address address.Model
 	data    data.Model
 	footer  footer.Model
+	overlay overlay.Model
 
 	path     string
 	quitting bool
@@ -30,7 +32,7 @@ type model struct {
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(m.address.Init(), m.data.Init(), m.footer.Init())
+	return tea.Batch(m.address.Init(), m.data.Init(), m.footer.Init(), m.overlay.Init())
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -51,6 +53,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case "toggle_focus":
 				m.state = (m.state + 1) % 2
+			case "show_info":
+				m.info = true
+			case "hide_info":
+				m.info = false
 			}
 		}
 	case tea.WindowSizeMsg:
@@ -83,9 +89,18 @@ func (m model) View() tea.View {
 		return tea.NewView("")
 	}
 	var s strings.Builder
-	// s.WriteString(" rymden software\n")
+
 	s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, m.address.View(), m.data.View()) + "\n")
 	s.WriteString(m.footer.View())
+
+	if m.info {
+		baseLayer := lipgloss.NewLayer(s.String()).ID("base")
+		overlay := lipgloss.NewLayer(m.overlay.View()).ID("overlay").X(40).Y(10).Z(10)
+		compositor := lipgloss.NewCompositor(baseLayer, overlay)
+		v := tea.NewView(compositor.Render())
+		v.AltScreen = true
+		return v
+	}
 
 	v := tea.NewView(s.String())
 	v.AltScreen = true
@@ -109,6 +124,7 @@ func main() {
 		address: address.New(0, ch_browse, "i=84"),
 		data:    data.New(1, ch_read, ch_write, []types.DataPoint{}, types.MyConfig.UpdateRate),
 		footer:  footer.New(types.MyConfig.Server.Endpoint),
+		overlay: overlay.New(),
 	}
 
 	time.Sleep(1000 * time.Millisecond) //wait for OPC UA service connection

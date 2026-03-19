@@ -1,6 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=opcua-browser
+Comment=OPC UA browser based on the Bubble Tea TUI framework
 Exec=alacritty -e opcua-browser
 Terminal=false
-Categories=Development;
+Categories=Network;Engineering;

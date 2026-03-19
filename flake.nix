@@ -25,7 +25,7 @@
 
           vendorHash = "sha256-QUOIY64FuDSb1AU55RGhj5ewlgexsKMRXRKwfcb+HlQ=";
 
-          installPhase = ''
+          postInstall = ''
             	mkdir -p $out/share/applications
             	cp opcua-browser.desktop $out/share/applications
             	'';

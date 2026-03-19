@@ -121,6 +121,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				}
 			case "delete":
 				if !m.EditMode {
+					if len(m.Data) == 0 {
+						break
+					}
 					m.Data = slices.Delete(m.Data, m.index, m.index+1)
 					m.Increment()
 

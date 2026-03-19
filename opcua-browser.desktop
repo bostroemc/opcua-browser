@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=opcua-browser
+Exec=alacritty -e opcua-browser
+Terminal=false
+Categories=Development;

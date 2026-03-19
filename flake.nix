@@ -24,6 +24,12 @@
           src = ./.;
 
           vendorHash = "sha256-QUOIY64FuDSb1AU55RGhj5ewlgexsKMRXRKwfcb+HlQ=";
+
+          installPhase = ''
+            	mkdir -p $out/share/applications
+            	cp opcua-browser.desktop $out/share/applications
+            	'';
+
         };
 
         # This makes the package accessible in a development shell

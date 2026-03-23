@@ -177,56 +177,11 @@ func (c *Config) Init(username, password *string) {
 		log.Fatal(err)
 	}
 
-	KeyActions = make(map[string]KeyAction)
+	KeyActions = DefaultKeyActions()
 	for _, b := range c.Keybinds {
 		for _, k := range b.Keys {
 			KeyActions[k] = KeyAction{Action: b.Action, Params: b.Params}
 		}
-	}
-
-	if ok := c.checkKeybind("quit"); !ok {
-		c.Keybinds = append(c.Keybinds, Keybind{Action: "quit", Keys: []string{"ctrl+q"}})
-		KeyActions["ctrl+q"] = KeyAction{Action: "quit"}
-	}
-	if ok := c.checkKeybind("toggle_edit_mode"); !ok {
-		c.Keybinds = append(c.Keybinds, Keybind{Action: "toggle_edit_mode", Keys: []string{"ctrl+e"}})
-		KeyActions["ctrl+e"] = KeyAction{Action: "toggle_edit_mode"}
-	}
-	if ok := c.checkKeybind("toggle_autoupdate"); !ok {
-		c.Keybinds = append(c.Keybinds, Keybind{Action: "toggle_autoupdate", Keys: []string{"ctrl+a"}})
-		KeyActions["ctrl+a"] = KeyAction{Action: "toggle_autoupdate"}
-	}
-	if ok := c.checkKeybind("toggle_focus"); !ok {
-		c.Keybinds = append(c.Keybinds, Keybind{Action: "toggle_focus", Keys: []string{"tab"}})
-		KeyActions["tab"] = KeyAction{Action: "toggle_focus"}
-	}
-	if ok := c.checkKeybind("toggle_boolean"); !ok {
-		c.Keybinds = append(c.Keybinds, Keybind{Action: "toggle_boolean", Keys: []string{"ctrl+space"}})
-		KeyActions["ctrl+space"] = KeyAction{Action: "toggle_boolean"}
-	}
-	if ok := c.checkKeybind("move_up"); !ok {
-		c.Keybinds = append(c.Keybinds, Keybind{Action: "move_up", Keys: []string{"k"}})
-		KeyActions["k"] = KeyAction{Action: "move_up"}
-	}
-	if ok := c.checkKeybind("move_down"); !ok {
-		c.Keybinds = append(c.Keybinds, Keybind{Action: "move_down", Keys: []string{"j"}})
-		KeyActions["j"] = KeyAction{Action: "move_down"}
-	}
-	if ok := c.checkKeybind("push"); !ok {
-		c.Keybinds = append(c.Keybinds, Keybind{Action: "push", Keys: []string{"p"}})
-		KeyActions["p"] = KeyAction{Action: "push"}
-	}
-	if ok := c.checkKeybind("delete"); !ok {
-		c.Keybinds = append(c.Keybinds, Keybind{Action: "delete", Keys: []string{"d"}})
-		KeyActions["d"] = KeyAction{Action: "delete"}
-	}
-	if ok := c.checkKeybind("select"); !ok {
-		c.Keybinds = append(c.Keybinds, Keybind{Action: "select", Keys: []string{"enter"}})
-		KeyActions["enter"] = KeyAction{Action: "select"}
-	}
-	if ok := c.checkKeybind("back"); !ok {
-		c.Keybinds = append(c.Keybinds, Keybind{Action: "back", Keys: []string{"u"}})
-		KeyActions["u"] = KeyAction{Action: "back"}
 	}
 
 	//Use username, password flags if supplied
@@ -238,11 +193,46 @@ func (c *Config) Init(username, password *string) {
 	}
 }
 
-func (c Config) checkKeybind(s string) bool {
-	for _, a := range c.Keybinds {
-		if a.Action == s {
-			return true
-		}
-	}
-	return false
+func DefaultKeyActions() map[string]KeyAction {
+	k := make(map[string]KeyAction)
+
+	k["quit"] = KeyAction{Action: "ctrl+q"}
+    k["toggle_edit_mode"] =KeyAction{Action: "ctrl+e"}
+
+      k["toggle_autoupdate"] =KeyAction{Action: "ctrl+a"}
+ 
+      k["toggle_focus"
+    KeyAction{keys: ["tab"]
+  k["toggle_boolean"
+    KeyAction{keys: ["ctrl+space", "ctrl+t"]
+
+
+  k["move_up"
+    KeyAction{keys: ["k", "up"]
+  k["move_down"
+    KeyAction{keys: ["j", "down"]
+  k["push"
+    KeyAction{keys: ["p"]
+  k["delete"
+    KeyAction{keys: ["d", "delete"]
+  k["select"
+    KeyAction{keys: ["enter", "right"]
+  k["back"
+    KeyAction{keys: ["u", "left"]
+  k["show_info"
+    KeyAction{keys: ["?"]
+  k["hide_info"
+    KeyAction{keys: ["esc"]
+
+
+  # shortcuts
+  k["root"
+    KeyAction{keys: ["r", "f1"]
+    params:
+      nodeid: "i=84"
+  k["user_defined_node"
+    KeyAction{keys: ["f", "f2"]
+    params:
+      nodeid: "ns=8;s=plc/app/Application/sym"
+	return k
 }

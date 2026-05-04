@@ -67,7 +67,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 				m.browse <- types.OpcUaBrowserData{Node: m.Node}
 				m.index = 0
-				m.max = max(m.max, m.Height-1)
+				m.max = max(m.max, m.Height-5)
 				m.SetMinMax(m.min, m.max)
 			case "back":
 				id := m.stack.Pop()
@@ -185,10 +185,11 @@ func (m *Model) pushView(selected, minimum, maximum int) {
 
 func (m *Model) SetView(height, width int) {
 	m.Height, m.Width = height, 1*width/4
-	if m.max > m.Height-1 || m.max == m.min {
-		m.max = m.min + m.Height - 1 //add that m.max must not be greater then len(Children)
+	if m.max > m.Height-5 || m.max == m.min {
+		m.max = m.min + m.Height - 5 //add that m.max must not be greater then len(Children)
 		// m.max = min(m.max, len(m.Children))
 	}
+	// log.Println("SetView: ", m.min, m.max, m.Height)
 }
 
 func (m Model) ActiveNode() types.Node {
@@ -198,12 +199,13 @@ func (m Model) ActiveNode() types.Node {
 func (m *Model) SetMinMax(minimum, maximum int) {
 	if m.index < minimum {
 		m.min = m.index
-		m.max = m.index + m.Height - 1
+		m.max = m.index + m.Height - 5
 		m.max = min(m.max, len(m.Children)-1)
 	}
 	if m.index > maximum {
 		m.max = m.index
-		m.min = m.index - m.Height + 1
+		m.min = m.index - m.Height + 5
 		m.min = max(m.min, 0)
 	}
+	// log.Println("SetMinMax: ", m.index, m.min, m.max, m.Height)
 }

@@ -57,6 +57,9 @@ func (m Model) Init() tea.Cmd {
 func (m Model) View() string {
 	var s strings.Builder
 	for i, l := range m.Data {
+		if i < m.min || i > m.max {
+			continue
+		}
 		node := nodeStyle.Render(l.Node)
 
 		var value string
@@ -196,19 +199,25 @@ func (m *Model) Increment() {
 
 func (m *Model) SetView(height, width int) {
 	m.Height, m.Width = height, width-width/4
+	if m.max > m.Height-4 || m.max == m.min {
+		m.max = m.min + m.Height - 4 //add that m.max must not be greater then len(Children)
+		// m.max = min(m.max, len(m.Children))
+	}
+	// log.Println("SetView: ", m.min, m.max, m.Height)
 }
 
-func (m *Model) SetMinMax(minimum, maximum int) {
+func (m *Model) SetMinMax(minimum, maximum int) { //TODO: Improve recalculation of max/min when window resizes.
 	if m.index < minimum {
 		m.min = m.index
-		m.max = m.index + m.Height - 1
+		m.max = m.index + m.Height - 4
 		m.max = min(m.max, len(m.Data)-1)
 	}
 	if m.index > maximum {
 		m.max = m.index
-		m.min = m.index - m.Height + 1
+		m.min = m.index - m.Height + 4
 		m.min = max(m.min, 0)
 	}
+	// log.Println("SetMinMax: ", m.index, m.min, m.max, m.Height)
 }
 func (m Model) ActiveDataPoint() types.DataPoint {
 	if len(m.Data) == 0 {

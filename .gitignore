@@ -3,3 +3,4 @@ certificates/
 
 flake.lock
 opcua-browser
+debug.log

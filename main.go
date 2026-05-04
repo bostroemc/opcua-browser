@@ -49,6 +49,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.state == 0 {
 					m.data.Data = append(m.data.Data, types.DataPoint{Node: m.address.ActiveNode().NodeID.String()})
 					m.data.Increment()
+					m.data.SetMinMax(0, len(m.data.Data)-1)
 				}
 
 			case "toggle_focus":
@@ -64,6 +65,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.address.SetView(m.height-3, m.width)
 		m.data.SetView(m.height-3, m.width)
+		// log.Println(m.height, m.width)  TODO: Delete OK
 	}
 
 	//Distribute state (i.e. active window) to the underlying modules
@@ -119,6 +121,14 @@ func main() {
 	ch_write := make(chan types.DataPoint)
 
 	go opcuaClient(types.MyConfig, ch_browse, ch_read, ch_write)
+
+	// f, err := tea.LogToFile("debug.log", "debug")		//Use  tail -f debug.log to view log while program is running
+	// if err != nil {
+	// 	fmt.Println("fatal:", err)
+	// 	os.Exit(1)
+	// }
+	// log.Println("Logging...")
+	// defer f.Close()
 
 	m := model{
 		address: address.New(0, ch_browse, "i=84"),

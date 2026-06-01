@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"os"
+	"os/signal"
 	"strings"
 	"time"
 
@@ -29,6 +32,8 @@ type model struct {
 
 	height int
 	width  int
+
+	cancel context.CancelFunc
 }
 
 func (m model) Init() tea.Cmd {
@@ -42,6 +47,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch keyAction.Action {
 			case "quit":
 				m.quitting = true
+				m.cancel()
+				time.Sleep(500 * time.Millisecond)
 				return m, tea.Quit
 			case "toggle_autoupdate":
 				m.data.Autoupdate = !m.data.Autoupdate
@@ -120,7 +127,9 @@ func main() {
 	ch_read := make(chan types.OpcUaReadData)
 	ch_write := make(chan types.DataPoint)
 
-	go opcuaClient(types.MyConfig, ch_browse, ch_read, ch_write)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+
+	go opcuaClient(ctx, types.MyConfig, ch_browse, ch_read, ch_write)
 
 	// f, err := tea.LogToFile("debug.log", "debug")		//Use  tail -f debug.log to view log while program is running
 	// if err != nil {
@@ -135,9 +144,10 @@ func main() {
 		data:    data.New(1, ch_read, ch_write, []types.DataPoint{}, types.MyConfig.UpdateRate),
 		footer:  footer.New(types.MyConfig.Server.Endpoint),
 		overlay: overlay.New(),
+		cancel:  cancel,
 	}
 
 	time.Sleep(1000 * time.Millisecond) //wait for OPC UA service connection
 
-	_, _ = tea.NewProgram(m).Run()
+	_, _ = tea.NewProgram(m, tea.WithContext(ctx)).Run()
 }

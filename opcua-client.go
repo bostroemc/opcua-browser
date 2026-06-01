@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/bostroemc/tui/opcua-browser/types"
@@ -10,9 +11,7 @@ import (
 	"github.com/gopcua/opcua/ua"
 )
 
-func opcuaClient(config types.Config, browse chan types.OpcUaBrowserData, read chan types.OpcUaReadData, write chan types.DataPoint) {
-	ctx := context.Background()
-
+func opcuaClient(ctx context.Context, config types.Config, browse chan types.OpcUaBrowserData, read chan types.OpcUaReadData, write chan types.DataPoint) {
 	endpoints, err := opcua.GetEndpoints(ctx, config.Server.Endpoint)
 	if err != nil {
 		log.Println(err)
@@ -42,89 +41,106 @@ func opcuaClient(config types.Config, browse chan types.OpcUaBrowserData, read c
 		log.Println("Failed to connect to OPC UA server: ", err)
 	}
 
-	// defer c.Close(ctx)  //TODO figure out how to Close properly...
+	defer c.Close(ctx)
+	var wg sync.WaitGroup
 
-	go func() {
+	wg.Go(func() {
 		for {
-			a := <-browse
+			select {
+			case <-ctx.Done():
+				return
 
-			if isActive(ctx, c) == false {
-				time.Sleep(1 * time.Second)
+			case a := <-browse:
+				if isActive(ctx, c) == false {
+					time.Sleep(1 * time.Second)
+				}
+
+				refs, err := c.Node(a.Node).ReferencedNodes(ctx, 0, ua.BrowseDirectionForward, ua.NodeClassAll, true)
+				if err != nil { //TODO handle error case; check whether error occurs in case there are no referenced nodes (i.e. there are no children)
+				}
+				var parent types.Node
+				attrs, _ := c.Node(a.Node).Attributes(ctx, ua.AttributeIDNodeID, ua.AttributeIDBrowseName, ua.AttributeIDDescription, ua.AttributeIDAccessLevel, ua.AttributeIDDataType)
+				parent = types.Node{NodeID: attrs[0].Value.NodeID(), BrowseName: attrs[1].Value.String(), Description: attrs[2].Value.String(), DataType: attrs[4].Value.String()}
+
+				var children []types.Node
+				for _, s := range refs {
+					attrs, _ := s.Attributes(ctx, ua.AttributeIDNodeID, ua.AttributeIDBrowseName, ua.AttributeIDDescription, ua.AttributeIDAccessLevel, ua.AttributeIDDataType)
+					children = append(children, types.Node{NodeID: attrs[0].Value.NodeID(), BrowseName: attrs[1].Value.String(), Description: attrs[2].Value.String(), DataType: attrs[4].Value.String()})
+				}
+
+				browse <- types.OpcUaBrowserData{Parent: parent, Children: children}
 			}
-
-			refs, err := c.Node(a.Node).ReferencedNodes(ctx, 0, ua.BrowseDirectionForward, ua.NodeClassAll, true)
-			if err != nil { //TODO handle error case; check whether error occurs in case there are no referenced nodes (i.e. there are no children)
-			}
-			var parent types.Node
-			attrs, _ := c.Node(a.Node).Attributes(ctx, ua.AttributeIDNodeID, ua.AttributeIDBrowseName, ua.AttributeIDDescription, ua.AttributeIDAccessLevel, ua.AttributeIDDataType)
-			parent = types.Node{NodeID: attrs[0].Value.NodeID(), BrowseName: attrs[1].Value.String(), Description: attrs[2].Value.String(), DataType: attrs[4].Value.String()}
-
-			var children []types.Node
-			for _, s := range refs {
-				attrs, _ := s.Attributes(ctx, ua.AttributeIDNodeID, ua.AttributeIDBrowseName, ua.AttributeIDDescription, ua.AttributeIDAccessLevel, ua.AttributeIDDataType)
-				children = append(children, types.Node{NodeID: attrs[0].Value.NodeID(), BrowseName: attrs[1].Value.String(), Description: attrs[2].Value.String(), DataType: attrs[4].Value.String()})
-			}
-
-			browse <- types.OpcUaBrowserData{Parent: parent, Children: children}
 		}
-	}()
+	})
 
 	//write
-	go func() {
+	wg.Go(func() {
 		for {
-			x := <-write
+			select {
+			case <-ctx.Done():
+				return
 
-			_temp := x.Node
-			id_1, _ := ua.ParseNodeID(_temp)
-			v, _ := ua.NewVariant(x.Pending)
-			req := &ua.WriteRequest{
-				NodesToWrite: []*ua.WriteValue{
-					{
-						NodeID:      id_1,
-						AttributeID: ua.AttributeIDValue,
-						Value: &ua.DataValue{
-							EncodingMask: ua.DataValueValue,
-							Value:        v,
+			case x := <-write:
+
+				_temp := x.Node
+				id_1, _ := ua.ParseNodeID(_temp)
+				v, _ := ua.NewVariant(x.Pending)
+				req := &ua.WriteRequest{
+					NodesToWrite: []*ua.WriteValue{
+						{
+							NodeID:      id_1,
+							AttributeID: ua.AttributeIDValue,
+							Value: &ua.DataValue{
+								EncodingMask: ua.DataValueValue,
+								Value:        v,
+							},
 						},
 					},
-				},
-			}
-			if c.State() != opcua.Connected {
-				continue
-			}
-			_, err := c.Write(ctx, req)
-			if err != nil {
-				log.Println(err)
-			}
-		}
-	}()
-
-	go func() {
-		var resp *ua.ReadResponse
-		for {
-			a := <-read
-
-			var Nodes []*ua.ReadValueID
-			for _, d := range a.Data {
-				_id, _ := ua.ParseNodeID(d.Node)
-				Nodes = append(Nodes, &ua.ReadValueID{NodeID: _id})
-			}
-
-			if len(Nodes) > 0 {
-				req := ua.ReadRequest{NodesToRead: Nodes}
-
-				resp, err = c.Read(ctx, &req)
-				if err != nil {
-					read <- types.OpcUaReadData{}
+				}
+				if c.State() != opcua.Connected {
 					continue
 				}
-				for i, r := range resp.Results {
-					a.Data[i].Value = r.Value.Value()
+				_, err := c.Write(ctx, req)
+				if err != nil {
+					log.Println(err)
 				}
 			}
-			read <- a
 		}
-	}()
+	})
+
+	wg.Go(func() {
+		var resp *ua.ReadResponse
+		for {
+			select {
+			case <-ctx.Done():
+				return
+
+			case a := <-read:
+
+				var Nodes []*ua.ReadValueID
+				for _, d := range a.Data {
+					_id, _ := ua.ParseNodeID(d.Node)
+					Nodes = append(Nodes, &ua.ReadValueID{NodeID: _id})
+				}
+
+				if len(Nodes) > 0 {
+					req := ua.ReadRequest{NodesToRead: Nodes}
+
+					resp, err = c.Read(ctx, &req)
+					if err != nil {
+						read <- types.OpcUaReadData{}
+						continue
+					}
+					for i, r := range resp.Results {
+						a.Data[i].Value = r.Value.Value()
+					}
+				}
+				read <- a
+			}
+		}
+	})
+
+	wg.Wait()
 }
 
 func isActive(ctx context.Context, client *opcua.Client) bool {

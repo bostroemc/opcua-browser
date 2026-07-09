@@ -110,6 +110,7 @@ func (m Model) View() string {
 		if m.Active == m.Id && m.index == i {
 			s.WriteString("  " + m.Styles.Index.Render(c.BrowseName) + m.Styles.Index.Render(c.DataType) + "\n")
 		} else {
+			// s.WriteString("  " + c.BrowseName + c.DataType + " " + c.NodeClass.String() + "\n")
 			s.WriteString("  " + c.BrowseName + c.DataType + "\n")
 		}
 

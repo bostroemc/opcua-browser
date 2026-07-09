@@ -122,7 +122,7 @@ func (d *DataPoint) SetPending(s string) (err error) {
 
 type Node struct {
 	NodeID      *ua.NodeID
-	NodeClass   ua.NodeClass
+	NodeClass   NodeClass
 	BrowseName  string
 	Description string
 	AccessLevel ua.AccessLevelType
@@ -245,4 +245,42 @@ func (c Config) checkKeybind(s string) bool {
 		}
 	}
 	return false
+}
+
+type NodeClass int64
+
+const (
+	// Unspecified NodeClass = 0
+	Object NodeClass = 1 << iota
+	Variable
+	Method
+	ObjectType
+	VariableType
+	ReferenceType
+	DataType
+	View
+)
+
+func (n NodeClass) String() string {
+	switch n {
+	case Object:
+		return "Object"
+	case Variable:
+		return "Variable"
+	case Method:
+		return "Method"
+	case ObjectType:
+		return "ObjectType"
+	case VariableType:
+		return "VariableType"
+	case ReferenceType:
+		return "ReferenceType"
+	case DataType:
+		return "DataType"
+	case View:
+		return "View"
+	default:
+		return "Unspecified"
+	}
+
 }

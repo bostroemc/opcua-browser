@@ -65,7 +65,7 @@ func opcuaClient(ctx context.Context, config types.Config, browse chan types.Opc
 				var children []types.Node
 				for _, s := range refs {
 					attrs, _ := s.Attributes(ctx, ua.AttributeIDNodeID, ua.AttributeIDBrowseName, ua.AttributeIDDescription, ua.AttributeIDAccessLevel, ua.AttributeIDDataType, ua.AttributeIDNodeClass)
-					children = append(children, types.Node{NodeID: attrs[0].Value.NodeID(), BrowseName: attrs[1].Value.String(), Description: attrs[2].Value.String(), DataType: attrs[4].Value.String(), NodeClass: types.NodeClass(attrs[5].Value.Int())})
+					children = append(children, types.Node{NodeID: attrs[0].Value.NodeID(), BrowseName: attrs[1].Value.String(), Description: attrs[2].Value.String(), DataType: attrs[4].Value.String(), NodeClass: ua.NodeClass(attrs[5].Value.Int())})
 				}
 
 				browse <- types.OpcUaBrowserData{Parent: parent, Children: children}

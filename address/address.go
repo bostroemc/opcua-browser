@@ -77,6 +77,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				m.index = 0
 				m.Node = id
 				m.Path = id.String()
+
 				m.browse <- types.OpcUaBrowserData{Node: id}
 				m.SetMinMax(m.min, m.max)
 			case "root", "user_defined_node":
@@ -107,10 +108,13 @@ func (m Model) View() string {
 		if i < m.min || i > m.max {
 			continue
 		}
-		if m.Active == m.Id && m.index == i {
+		if m.Active == m.Id && m.index == i && c.NodeClass.String() == "NodeClassMethod" {
+			s.WriteString("  " + m.Styles.ActiveMethod.Render(c.BrowseName) + m.Styles.ActiveMethod.Render(c.DataType) + "\n")
+		} else if m.Active == m.Id && m.index == i {
 			s.WriteString("  " + m.Styles.Index.Render(c.BrowseName) + m.Styles.Index.Render(c.DataType) + "\n")
+		} else if c.NodeClass.String() == "NodeClassMethod" {
+			s.WriteString("  " + m.Styles.Method.Render(c.BrowseName) + m.Styles.Method.Render(c.DataType) + "\n")
 		} else {
-			// s.WriteString("  " + c.BrowseName + c.DataType + " " + c.NodeClass.String() + "\n")
 			s.WriteString("  " + c.BrowseName + c.DataType + "\n")
 		}
 

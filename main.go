@@ -14,19 +14,22 @@ import (
 	data "github.com/bostroemc/tui/opcua-browser/data"
 	"github.com/bostroemc/tui/opcua-browser/footer"
 	"github.com/bostroemc/tui/opcua-browser/overlay"
+	overlaymethod "github.com/bostroemc/tui/opcua-browser/overlaymethod"
 	"github.com/bostroemc/tui/opcua-browser/types"
 )
 
 type model struct {
-	address address.Model
-	data    data.Model
-	footer  footer.Model
-	overlay overlay.Model
+	address       address.Model
+	data          data.Model
+	footer        footer.Model
+	overlay       overlay.Model
+	overlaymethod overlaymethod.Model
 
-	path     string
-	quitting bool
-	err      error
-	info     bool
+	path         string
+	quitting     bool
+	err          error
+	info         bool
+	method_popup bool
 
 	state int
 
@@ -54,9 +57,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.data.Autoupdate = !m.data.Autoupdate
 			case "push":
 				if m.state == 0 {
-					m.data.Data = append(m.data.Data, types.DataPoint{Node: m.address.ActiveNode().NodeID.String()})
-					m.data.Increment()
-					m.data.SetMinMax(0, len(m.data.Data)-1)
+					switch m.address.ActiveNode().NodeClass.String() {
+					case "NodeClassVariable":
+						m.data.Data = append(m.data.Data, types.DataPoint{Node: m.address.ActiveNode().NodeID.String()})
+						m.data.Increment()
+						m.data.SetMinMax(0, len(m.data.Data)-1)
+
+					case "NodeClassMethod":
+						m.method_popup = true
+
+					}
 				}
 
 			case "toggle_focus":
@@ -65,6 +75,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.info = true
 			case "hide_info":
 				m.info = false
+				m.method_popup = false
 			}
 		}
 	case tea.WindowSizeMsg:
@@ -110,6 +121,14 @@ func (m model) View() tea.View {
 		v.AltScreen = true
 		return v
 	}
+	if m.method_popup {
+		baseLayer := lipgloss.NewLayer(s.String()).ID("base")
+		overlaymethod := lipgloss.NewLayer(m.overlaymethod.View()).ID("overlaymethod").X(10).Y(3).Z(10)
+		compositor := lipgloss.NewCompositor(baseLayer, overlaymethod)
+		v := tea.NewView(compositor.Render())
+		v.AltScreen = true
+		return v
+	}
 
 	v := tea.NewView(s.String())
 	v.AltScreen = true
@@ -140,11 +159,12 @@ func main() {
 	// defer f.Close()
 
 	m := model{
-		address: address.New(0, ch_browse, "i=84"),
-		data:    data.New(1, ch_read, ch_write, []types.DataPoint{}, types.MyConfig.UpdateRate),
-		footer:  footer.New(types.MyConfig.Server.Endpoint),
-		overlay: overlay.New(),
-		cancel:  cancel,
+		address:       address.New(0, ch_browse, "i=84"),
+		data:          data.New(1, ch_read, ch_write, []types.DataPoint{}, types.MyConfig.UpdateRate),
+		footer:        footer.New(types.MyConfig.Server.Endpoint),
+		overlay:       overlay.New(),
+		overlaymethod: overlaymethod.New(),
+		cancel:        cancel,
 	}
 
 	time.Sleep(1000 * time.Millisecond) //wait for OPC UA service connection

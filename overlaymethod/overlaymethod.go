@@ -46,7 +46,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				m.Show = false
 			case "move_down":
 				m.index++
-				m.index = min(m.index, len(m.Data)-1)
+				m.index = min(m.index, m.LineCount()-1)
 				m.SetMinMax(m.min, m.max)
 			case "move_up":
 				m.index--
@@ -56,7 +56,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			}
 		}
 	}
-
 	return m, nil
 }
 
@@ -78,16 +77,26 @@ func (m Model) View() string {
 		// 	}
 		// }
 		// }
+		i := 0
 		for _, o := range m.Data {
+
 			arg, _ := o.ExtensionObject.Value.(*ua.Argument)
-			s.WriteString(arg.Name + "\n")
+			if m.index == i {
+				s.WriteString(m.Styles.Index.Render(arg.Name) + "\n")
+			} else {
+				s.WriteString(arg.Name + "\n")
+			}
+			i++
 			if arg.DataType.Namespace() != 0 {
 				for _, field := range o.StructureDefinition.Fields {
-					s.WriteString("  " + field.Name + "\n")
+					if m.index == i {
+						s.WriteString("  " + m.Styles.Index.Render(field.Name) + "\n")
+					} else {
+						s.WriteString("  " + field.Name + "\n")
+					}
+					i++
 				}
-
 			}
-
 		}
 
 		return m.Styles.Overlay.Render(s.String()) // lipgloss.JoinHorizontal(lipgloss.Top, s.String())
@@ -108,4 +117,19 @@ func (m *Model) SetMinMax(minimum, maximum int) { //TODO: Improve recalculation 
 		m.min = max(m.min, 0)
 	}
 	// log.Println("SetMinMax: ", m.index, m.min, m.max, m.Height)
+}
+
+func (m *Model) LineCount() int {
+	i := 0
+
+	for _, o := range m.Data {
+
+		arg, _ := o.ExtensionObject.Value.(*ua.Argument)
+		i++
+		if arg.DataType.Namespace() != 0 {
+			i += len(o.StructureDefinition.Fields)
+		}
+	}
+
+	return i
 }

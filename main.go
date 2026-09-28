@@ -105,7 +105,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.address.Active = m.state
 	m.data.Active = m.state
 
-	var cmd [3]tea.Cmd
+	var cmd [4]tea.Cmd
 
 	m.address, cmd[0] = m.address.Update(msg)
 	m.data, cmd[1] = m.data.Update(msg)
@@ -116,7 +116,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.footer.Path = m.address.Path
 	m.footer.Width = m.width
 
-	return m, tea.Batch(cmd[0], cmd[1], cmd[2])
+	m.overlaymethod, cmd[3] = m.overlaymethod.Update(msg)
+
+	return m, tea.Batch(cmd[0], cmd[1], cmd[2], cmd[3])
 }
 
 func (m model) View() tea.View {

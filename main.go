@@ -148,7 +148,10 @@ func main() {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 
-	go opcuaClient(ctx, types.MyConfig, ch_browse, ch_read, ch_write)
+	// go opcuaClient(ctx, types.MyConfig, ch_browse, ch_read, ch_write)
+	backend := NewServiceOpcUa(ctx, types.MyConfig, ch_browse, ch_read, ch_write)
+	backend.Connect()
+	go backend.Run()
 
 	// f, err := tea.LogToFile("debug.log", "debug")		//Use  tail -f debug.log to view log while program is running
 	// if err != nil {

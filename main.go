@@ -16,6 +16,7 @@ import (
 	"github.com/bostroemc/tui/opcua-browser/overlay"
 	overlaymethod "github.com/bostroemc/tui/opcua-browser/overlaymethod"
 	"github.com/bostroemc/tui/opcua-browser/types"
+	"github.com/gopcua/opcua/ua"
 )
 
 type model struct {
@@ -36,7 +37,8 @@ type model struct {
 	height int
 	width  int
 
-	cancel context.CancelFunc
+	cancel  context.CancelFunc
+	backend *ServiceOpcUa
 }
 
 func (m model) Init() tea.Cmd {
@@ -65,6 +67,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 					case "NodeClassMethod":
 						m.method_popup = true
+						objects, _ := m.backend.GetInputArguments(m.address.ActiveNode().NodeID)
+						m.overlaymethod.Data = nil
+						for i, o := range objects {
+
+							arg, _ := o.Value.(*ua.Argument)
+							m.overlaymethod.Data = append(m.overlaymethod.Data, types.OpcUaInputArgumentData{ExtensionObject: o})
+
+							if arg.DataType.Namespace() != 0 {
+								m.overlaymethod.Data[i].StructureDefinition, _ = m.backend.GetStructureDefinition(arg.DataType)
+								m.overlaymethod.Data[i].BinaryEncodingID, _ = m.backend.FindBinaryEncodingID(arg.DataType)
+							}
+
+						}
 
 					}
 				}
@@ -151,6 +166,7 @@ func main() {
 	// go opcuaClient(ctx, types.MyConfig, ch_browse, ch_read, ch_write)
 	backend := NewServiceOpcUa(ctx, types.MyConfig, ch_browse, ch_read, ch_write)
 	backend.Connect()
+
 	go backend.Run()
 
 	// f, err := tea.LogToFile("debug.log", "debug")		//Use  tail -f debug.log to view log while program is running
@@ -168,6 +184,7 @@ func main() {
 		overlay:       overlay.New(),
 		overlaymethod: overlaymethod.New(),
 		cancel:        cancel,
+		backend:       backend,
 	}
 
 	time.Sleep(1000 * time.Millisecond) //wait for OPC UA service connection

@@ -457,7 +457,7 @@ func resolveDataType(id *ua.NodeID) string {
 	}
 }
 
-func findBinaryEncodingID(ctx context.Context, client *opcua.Client, dataTypeID *ua.NodeID) (*ua.NodeID, error) {
+func (s *ServiceOpcUa) FindBinaryEncodingID(dataTypeID *ua.NodeID) (*ua.NodeID, error) {
 	browseReq := &ua.BrowseRequest{
 		NodesToBrowse: []*ua.BrowseDescription{
 			{
@@ -471,7 +471,7 @@ func findBinaryEncodingID(ctx context.Context, client *opcua.Client, dataTypeID 
 		},
 	}
 
-	resp, err := client.Browse(ctx, browseReq)
+	resp, err := s.Client.Browse(s.ctx, browseReq)
 	if err != nil {
 		return nil, fmt.Errorf("network browse error: %w", err)
 	}
@@ -536,7 +536,7 @@ func (s *ServiceOpcUa) GetInputArguments(methodID *ua.NodeID) ([]*ua.ExtensionOb
 
 }
 
-func getStructureDefinition(ctx context.Context, client *opcua.Client, dataType *ua.NodeID) (*ua.StructureDefinition, error) {
+func (s *ServiceOpcUa) GetStructureDefinition(dataType *ua.NodeID) (*ua.StructureDefinition, error) {
 	attrReq := &ua.ReadRequest{
 		NodesToRead: []*ua.ReadValueID{
 			{
@@ -545,7 +545,7 @@ func getStructureDefinition(ctx context.Context, client *opcua.Client, dataType 
 			},
 		},
 	}
-	res, err := client.Read(ctx, attrReq)
+	res, err := s.Client.Read(s.ctx, attrReq)
 	if err != nil || res.Results[0].Status != ua.StatusOK {
 		log.Fatalf("Failed to fetch schema: %v", err)
 	}

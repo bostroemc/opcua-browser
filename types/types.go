@@ -23,6 +23,12 @@ type OpcUaReadData struct {
 	Count int         //count is used to verify that that underlying model has not changed during the async operation
 }
 
+type OpcUaInputArgumentData struct {
+	ExtensionObject     *ua.ExtensionObject     //List of nodes to be read
+	StructureDefinition *ua.StructureDefinition //count is used to verify that that underlying model has not changed during the async operation
+	BinaryEncodingID    *ua.NodeID
+}
+
 type DataPoint struct {
 	Enable  bool // TODO: EnableValues
 	Block   bool // TODO: Block updateValuesrouter -- to be used if valValuescurrently being edited in UI

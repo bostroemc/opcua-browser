@@ -3,16 +3,32 @@ package overlaymethod
 import (
 	"strings"
 
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	_ "charm.land/lipgloss/v2"
 	"github.com/bostroemc/tui/opcua-browser/types"
 	"github.com/gopcua/opcua/ua"
 )
 
 func New() Model {
+	input := textinput.New()
+	input.Placeholder = ""
+	input.Prompt = "┃"
+	input.CharLimit = 40
+
+	s := input.Styles()
+	s.Focused.Text = lipgloss.NewStyle().Foreground(lipgloss.Color("#FCAA95")).Bold(true)
+	s.Focused.Prompt = lipgloss.NewStyle().Foreground(lipgloss.Color("#FCAA95"))
+	s.Cursor.Color = lipgloss.Color("#FCAA95")
+
+	input.SetStyles(s)
+
 	return Model{
 		// Endpoint: endpoint,
 		Styles: types.DefaultStyles(),
+		Input:  input,
+		Width:  60,
 	}
 }
 
@@ -26,7 +42,9 @@ type Model struct {
 	Data   []types.OpcUaInputArgumentData
 	Styles types.Styles
 	Show   bool
+	Input  textinput.Model
 
+	EditMode bool
 	Height   int
 	Width    int
 	index    int
@@ -52,11 +70,25 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				m.index--
 				m.index = max(m.index, 0)
 				m.SetMinMax(m.min, m.max)
+			case "toggle_edit_mode":
+				m.EditMode = !m.EditMode
+				if m.EditMode {
+					// m.Input.SetValue(m.Data[m.index].String())
+				}
 
 			}
 		}
 	}
-	return m, nil
+
+	if m.EditMode {
+		m.Input.Focus()
+	} else {
+		m.Input.Blur()
+	}
+	var cmd tea.Cmd
+	m.Input, cmd = m.Input.Update(msg)
+
+	return m, cmd
 }
 
 func (m Model) View() string {
@@ -81,8 +113,24 @@ func (m Model) View() string {
 		for _, o := range m.Data {
 
 			arg, _ := o.ExtensionObject.Value.(*ua.Argument)
+			node := nodeStyle.Render(arg.Name)
+			var value string
+
 			if m.index == i {
-				s.WriteString(m.Styles.Index.Render(arg.Name) + "\n")
+				if m.EditMode {
+					value = m.Input.View()
+				} else {
+					value = valueStyle.Render(arg.Name)
+				}
+
+				gapWidth := m.Width - lipgloss.Width(node) - lipgloss.Width(value) - 2
+				if gapWidth < 0 {
+					gapWidth = 0
+				}
+				gap := strings.Repeat(" ", gapWidth)
+
+				s.WriteString(m.Styles.Index.Render(lipgloss.JoinHorizontal(lipgloss.Top, node, gap, value)) + "\n")
+
 			} else {
 				s.WriteString(arg.Name + "\n")
 			}
@@ -133,3 +181,9 @@ func (m *Model) LineCount() int {
 
 	return i
 }
+
+var nodeStyle = lipgloss.NewStyle().
+	Align(lipgloss.Left)
+
+var valueStyle = lipgloss.NewStyle().
+	Align(lipgloss.Right)

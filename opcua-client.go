@@ -319,6 +319,33 @@ func (d DynamicBinaryStruct) Encode() ([]byte, error) {
 	return d.RawBytes, nil
 }
 
+func (s *ServiceOpcUa) Call(objectID, methodID *ua.NodeID, data []types.OpcUaInputArgumentData, values []string) (*ua.CallMethodResult, error) {
+	var inputArguments []*ua.Variant
+	i := 0
+	for _, o := range data {
+
+		arg, _ := o.ExtensionObject.Value.(*ua.Argument)
+
+		if arg.DataType.Namespace() == 0 {
+			v, _ := getVariant(values[i], arg)
+			inputArguments = append(inputArguments, v)
+			i++
+		}
+
+		if arg.DataType.Namespace() != 0 {
+			// inputArguments = append(inputArguments, tmp)
+		}
+	}
+
+	req := &ua.CallMethodRequest{
+		ObjectID:       objectID,
+		MethodID:       methodID,
+		InputArguments: inputArguments, // Nest the extension object into the generic Variant parameter
+	}
+
+	return s.Client.Call(s.ctx, req)
+}
+
 func EncodeDynamicStruct(fields []*ua.StructureField, inputData map[string]interface{}) ([]byte, error) {
 
 	buf := ua.NewBuffer(nil)
@@ -563,10 +590,7 @@ func (s *ServiceOpcUa) GetStructureDefinition(dataType *ua.NodeID) (*ua.Structur
 	return typeDef, nil
 }
 
-func getVariant(scanner *bufio.Scanner, arg *ua.Argument) (*ua.Variant, error) {
-	fmt.Printf("Enter %s value for %s \n", arg.DataType, arg.Name)
-	scanner.Scan()
-	value := scanner.Text()
+func getVariant(value string, arg *ua.Argument) (*ua.Variant, error) {
 	switch arg.DataType.IntID() {
 	case 1: //Boolean
 		_value, err := strconv.ParseBool(value)

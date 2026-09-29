@@ -24,9 +24,11 @@ type OpcUaReadData struct {
 }
 
 type OpcUaInputArgumentData struct {
-	ExtensionObject     *ua.ExtensionObject     //List of nodes to be read
-	StructureDefinition *ua.StructureDefinition //count is used to verify that that underlying model has not changed during the async operation
+	ExtensionObject     *ua.ExtensionObject     //
+	StructureDefinition *ua.StructureDefinition //
 	BinaryEncodingID    *ua.NodeID
+	Value               *ua.Variant
+	Children            []OpcUaInputArgumentData
 }
 
 type DataPoint struct {

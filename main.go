@@ -69,17 +69,20 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.method_popup = true
 						objects, _ := m.backend.GetInputArguments(m.address.ActiveNode().NodeID)
 						m.overlaymethod.Data = nil
+						count := 0
 						for i, o := range objects {
 
 							arg, _ := o.Value.(*ua.Argument)
 							m.overlaymethod.Data = append(m.overlaymethod.Data, types.OpcUaInputArgumentData{ExtensionObject: o})
-
+							count++
 							if arg.DataType.Namespace() != 0 {
 								m.overlaymethod.Data[i].StructureDefinition, _ = m.backend.GetStructureDefinition(arg.DataType)
 								m.overlaymethod.Data[i].BinaryEncodingID, _ = m.backend.FindBinaryEncodingID(arg.DataType)
+								count += len(m.overlaymethod.Data[i].StructureDefinition.Fields)
 							}
 
 						}
+						m.overlaymethod.Values = make([]string, count)
 
 					}
 				}
@@ -91,6 +94,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "hide_info":
 				m.info = false
 				m.method_popup = false
+				objectID, _ := ua.ParseNodeID("ns=7;b=AQAAAKviM3HH0CF5me8lFA==")
+				methodID, _ := ua.ParseNodeID("ns=7;b=AQAAAKviM3HH0CF5me8lOrrqLWSF5kA=")
+				m.backend.Call(objectID, methodID, m.overlaymethod.Data, m.overlaymethod.Values)
 			}
 		}
 	case tea.WindowSizeMsg:

@@ -37,9 +37,10 @@ type Model struct {
 	// Endpoint  string
 	// DataPoint types.DataPoint
 
-	Objects []*ua.ExtensionObject
+	// Objects []*ua.ExtensionObject
 
 	Data   []types.OpcUaInputArgumentData
+	Values []string
 	Styles types.Styles
 	Show   bool
 	Input  textinput.Model
@@ -75,6 +76,14 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				if m.EditMode {
 					// m.Input.SetValue(m.Data[m.index].String())
 				}
+			case "select":
+				if m.EditMode {
+					m.Values[m.index] = m.Input.Value()
+
+					m.EditMode = false
+					m.Input.SetValue("")
+				}
+			case "ctrl+c":
 
 			}
 		}
@@ -95,53 +104,56 @@ func (m Model) View() string {
 	if m.Show || true {
 
 		var s strings.Builder
-		// for _, o := range m.Objects {
-		// arg, _ := o.Value.(*ua.Argument)
-		// s.WriteString(arg.Name + "\n")
-
-		// if arg.DataType.Namespace() != 0 {
-		// 	typeDef, _ := m.backend.GetStructureDefinition(arg.DataType)
-		// 	binaryEncodingID, _ := m.backend.FindBinaryEncodingID(arg.DataType)
-		// 	fmt.Println(binaryEncodingID)
-		// 	for _, field := range typeDef.Fields {
-		// 		fmt.Printf("Field Name: %s | DataType ID: %s %s\n", field.Name, field.DataType.String(), resolveDataType(field.DataType))
-		//
-		// 	}
-		// }
-		// }
 		i := 0
 		for _, o := range m.Data {
 
 			arg, _ := o.ExtensionObject.Value.(*ua.Argument)
 			node := nodeStyle.Render(arg.Name)
-			var value string
+			value := ""
+
+			value = valueStyle.Render(m.Values[i])
+
+			if m.index == i && m.EditMode {
+				value = m.Input.View()
+			}
+
+			gapWidth := m.Width - lipgloss.Width(node) - lipgloss.Width(value) - 2
+			if gapWidth < 0 {
+				gapWidth = 0
+			}
+			gap := strings.Repeat(" ", gapWidth)
 
 			if m.index == i {
-				if m.EditMode {
-					value = m.Input.View()
-				} else {
-					value = valueStyle.Render(arg.Name)
-				}
-
-				gapWidth := m.Width - lipgloss.Width(node) - lipgloss.Width(value) - 2
-				if gapWidth < 0 {
-					gapWidth = 0
-				}
-				gap := strings.Repeat(" ", gapWidth)
-
 				s.WriteString(m.Styles.Index.Render(lipgloss.JoinHorizontal(lipgloss.Top, node, gap, value)) + "\n")
 
 			} else {
-				s.WriteString(arg.Name + "\n")
+				s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, node, gap, value) + "\n")
 			}
 			i++
 			if arg.DataType.Namespace() != 0 {
 				for _, field := range o.StructureDefinition.Fields {
-					if m.index == i {
-						s.WriteString("  " + m.Styles.Index.Render(field.Name) + "\n")
-					} else {
-						s.WriteString("  " + field.Name + "\n")
+					node := nodeStyle.Render(field.Name)
+					value := ""
+
+					value = valueStyle.Render(m.Values[i])
+
+					if m.index == i && m.EditMode {
+						value = m.Input.View()
 					}
+
+					gapWidth := m.Width - lipgloss.Width(node) - lipgloss.Width(value) - 4
+					if gapWidth < 0 {
+						gapWidth = 0
+					}
+					gap := strings.Repeat(" ", gapWidth)
+
+					if m.index == i {
+						s.WriteString(m.Styles.Index.Render(lipgloss.JoinHorizontal(lipgloss.Top, "  ", node, gap, value)) + "\n")
+
+					} else {
+						s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, "  ", node, gap, value) + "\n")
+					}
+
 					i++
 				}
 			}

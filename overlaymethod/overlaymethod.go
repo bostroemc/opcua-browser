@@ -39,6 +39,9 @@ type Model struct {
 
 	// Objects []*ua.ExtensionObject
 
+	Parent types.Node
+	Method types.Node
+
 	Data   []types.OpcUaInputArgumentData
 	Values []string
 	Styles types.Styles

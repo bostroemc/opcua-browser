@@ -83,6 +83,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 						}
 						m.overlaymethod.Values = make([]string, count)
+						m.overlaymethod.Parent = m.address.Parent
+						m.overlaymethod.Method = m.address.ActiveNode()
 
 					}
 				}
@@ -94,9 +96,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "hide_info":
 				m.info = false
 				m.method_popup = false
-				objectID, _ := ua.ParseNodeID("ns=7;b=AQAAAKviM3HH0CF5me8lFA==")
-				methodID, _ := ua.ParseNodeID("ns=7;b=AQAAAKviM3HH0CF5me8lOrrqLWSF5kA=")
-				m.backend.Call(objectID, methodID, m.overlaymethod.Data, m.overlaymethod.Values)
+				m.backend.Call(m.overlaymethod.Parent.NodeID, m.overlaymethod.Method.NodeID, m.overlaymethod.Data, m.overlaymethod.Values)
 			}
 		}
 	case tea.WindowSizeMsg:

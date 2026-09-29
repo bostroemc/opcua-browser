@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"log"
@@ -333,7 +332,8 @@ func (s *ServiceOpcUa) Call(objectID, methodID *ua.NodeID, data []types.OpcUaInp
 		}
 
 		if arg.DataType.Namespace() != 0 {
-			// inputArguments = append(inputArguments, tmp)
+			v, _ := getExtension(values, i, arg, o.StructureDefinition, o.BinaryEncodingID)
+			inputArguments = append(inputArguments, v)
 		}
 	}
 
@@ -668,16 +668,12 @@ func getVariant(value string, arg *ua.Argument) (*ua.Variant, error) {
 
 }
 
-func getExtension(scanner *bufio.Scanner, arg *ua.Argument, typeDef *ua.StructureDefinition, encoding *ua.NodeID) (*ua.Variant, error) {
+func getExtension(values []string, index int, arg *ua.Argument, typeDef *ua.StructureDefinition, encoding *ua.NodeID) (*ua.Variant, error) {
 
 	inputData := make(map[string]interface{})
-
+	i := index + 1
 	for _, field := range typeDef.Fields {
-		fmt.Printf("Field Name: %s | DataType ID: %s %s\n", field.Name, field.DataType.String(), resolveDataType(field.DataType))
-		fmt.Printf("Enter value for %s \n", field.Name)
-		// fmt.Scanln(&value)
-		scanner.Scan()
-		value := scanner.Text()
+		value := values[i]
 		if field.DataType.String() == "i=6" {
 			p, _ := strconv.ParseInt(value, 10, 32)
 			inputData[field.Name] = int32(p)
@@ -690,7 +686,7 @@ func getExtension(scanner *bufio.Scanner, arg *ua.Argument, typeDef *ua.Structur
 		if field.DataType.String() == "i=12" {
 			inputData[field.Name] = value
 		}
-
+		i++
 	}
 
 	rawBytes, err := EncodeDynamicStruct(typeDef.Fields, inputData)

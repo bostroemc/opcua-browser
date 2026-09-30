@@ -21,6 +21,7 @@ authorization:
 
 update_rate: 500 # update rate in milliseconds
 
+
 keybinds:
   # global:
   - action: "quit"
@@ -29,6 +30,8 @@ keybinds:
     keys: ["ctrl+e"]
   - action: "toggle_autoupdate"
     keys: ["ctrl+a"]
+  - action: "toggle_boolean"
+    keys: ["ctrl+t"]
   - action: "move_up"
     keys: ["k", "up"]
   - action: "move_down"
@@ -43,8 +46,13 @@ keybinds:
     keys: ["enter", "right"]
   - action: "back"
     keys: ["u", "left"]
-  - action: "toggle_boolean"
-    keys: ["ctrl+space"]
+  - action: "show_info"
+    keys: ["?"]
+  - action: "hide_info"
+    keys: ["esc"]
+  - action: "call"
+    keys: ["ctrl+c"]
+
 
   # shortcuts
   - action: "root"

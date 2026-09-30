@@ -23,6 +23,14 @@ type OpcUaReadData struct {
 	Count int         //count is used to verify that that underlying model has not changed during the async operation
 }
 
+type OpcUaInputArgumentData struct {
+	ExtensionObject     *ua.ExtensionObject     //
+	StructureDefinition *ua.StructureDefinition //
+	BinaryEncodingID    *ua.NodeID
+	Value               *ua.Variant
+	Children            []OpcUaInputArgumentData
+}
+
 type DataPoint struct {
 	Enable  bool // TODO: EnableValues
 	Block   bool // TODO: Block updateValuesrouter -- to be used if valValuescurrently being edited in UI
@@ -227,6 +235,10 @@ func (c *Config) Init(username, password *string) {
 	if ok := c.checkKeybind("back"); !ok {
 		c.Keybinds = append(c.Keybinds, Keybind{Action: "back", Keys: []string{"u"}})
 		KeyActions["u"] = KeyAction{Action: "back"}
+	}
+	if ok := c.checkKeybind("call"); !ok {
+		c.Keybinds = append(c.Keybinds, Keybind{Action: "call", Keys: []string{"ctrl+c"}})
+		KeyActions["ctrl+c"] = KeyAction{Action: "call"}
 	}
 
 	//Use username, password flags if supplied

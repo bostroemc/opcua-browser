@@ -103,7 +103,6 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 					m.Input.SetValue("")
 				}
 			case "call":
-				// fmt.Println(m.Parent.NodeID, m.Method.NodeID, m.Data, m.Values)
 				m.backend.Call(m.Parent.NodeID, m.Method.NodeID, m.Data, m.Values)
 			}
 		}
@@ -179,12 +178,13 @@ func (m Model) View() string {
 			}
 		}
 		if m.Active == m.Id {
-			return m.Styles.ActiveOverlay.Render(s.String())
+			m.Styles.ActiveBody = m.Styles.ActiveBody.Width(m.Width).Height(m.Height)
+			return lipgloss.JoinVertical(lipgloss.Left, m.Styles.ActiveTitle.Render(" "+m.Method.BrowseName), m.Styles.ActiveBody.Render(s.String()))
 		}
 
-		return m.Styles.Overlay.Render(s.String())
+		m.Styles.Body = m.Styles.Body.Width(m.Width).Height(m.Height)
+		return lipgloss.JoinVertical(lipgloss.Left, m.Styles.Title.Render(" "+m.Method.BrowseName), m.Styles.Body.Render(s.String()))
 	}
-
 	return "----"
 }
 

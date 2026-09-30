@@ -86,6 +86,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.overlaymethod.Values = make([]string, count)
 						m.overlaymethod.Parent = m.address.Parent
 						m.overlaymethod.Method = m.address.ActiveNode()
+						m.state = 2
 
 					}
 				}
@@ -97,7 +98,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "hide_info":
 				m.info = false
 				m.method_popup = false
-				// m.backend.Call(m.overlaymethod.Parent.NodeID, m.overlaymethod.Method.NodeID, m.overlaymethod.Data, m.overlaymethod.Values)
+				m.state = 0
 			}
 		}
 	case tea.WindowSizeMsg:

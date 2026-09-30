@@ -320,15 +320,13 @@ func (d DynamicBinaryStruct) Encode() ([]byte, error) {
 
 func (s *ServiceOpcUa) Call(objectID, methodID *ua.NodeID, data []types.OpcUaInputArgumentData, values []string) (*ua.CallMethodResult, error) {
 	var inputArguments []*ua.Variant
-	i := 0
-	for _, o := range data {
 
+	for i, o := range data {
 		arg, _ := o.ExtensionObject.Value.(*ua.Argument)
 
 		if arg.DataType.Namespace() == 0 {
 			v, _ := getVariant(values[i], arg)
 			inputArguments = append(inputArguments, v)
-			i++
 		}
 
 		if arg.DataType.Namespace() != 0 {
@@ -519,6 +517,11 @@ func (s *ServiceOpcUa) FindBinaryEncodingID(dataTypeID *ua.NodeID) (*ua.NodeID, 
 
 // func getInputArguments(ctx context.Context, client *opcua.Client, methodID *ua.NodeID) ([]*ua.ExtensionObject, error) {
 func (s *ServiceOpcUa) GetInputArguments(methodID *ua.NodeID) ([]*ua.ExtensionObject, error) {
+
+	if isActive(s.ctx, s.Client) == false {
+		time.Sleep(1 * time.Second)
+	}
+
 	methodNode := s.Client.Node(methodID)
 
 	// 2. Fetch all child references of this method node
@@ -595,67 +598,67 @@ func getVariant(value string, arg *ua.Argument) (*ua.Variant, error) {
 	case 1: //Boolean
 		_value, err := strconv.ParseBool(value)
 		if err != nil {
-			return nil, err
+			return ua.NewVariant(false) //  nil, err
 		}
 		return ua.NewVariant(_value)
 	case 2: //SByte
 		_value, err := strconv.ParseUint(value, 10, 8)
 		if err != nil {
-			return nil, err
+			return ua.NewVariant(uint8(0)) //nil, err
 		}
 		return ua.NewVariant(uint8(_value))
 	case 3: //Byte
 		_value, err := strconv.ParseUint(value, 10, 8)
 		if err != nil {
-			return nil, err
+			return ua.NewVariant(byte(0)) //nil, err
 		}
 		return ua.NewVariant(byte(_value))
 	case 4: //Int16
 		_value, err := strconv.ParseInt(value, 10, 16)
 		if err != nil {
-			return nil, err
+			return ua.NewVariant(int16(0)) //nil, err
 		}
 		return ua.NewVariant(int16(_value))
 	case 5: //UInt16
 		_value, err := strconv.ParseUint(value, 10, 16)
 		if err != nil {
-			return nil, err
+			return ua.NewVariant(uint16(0)) //nil, err
 		}
 		return ua.NewVariant(uint16(_value))
 	case 6: //Int32
 		_value, err := strconv.ParseInt(value, 10, 32)
 		if err != nil {
-			return nil, err
+			return ua.NewVariant(int32(0)) //nil, err
 		}
 		return ua.NewVariant(int32(_value))
 	case 7: //UInt32
 		_value, err := strconv.ParseUint(value, 10, 32)
 		if err != nil {
-			return nil, err
+			return ua.NewVariant(uint32(0)) //nil, err
 		}
 		return ua.NewVariant(uint32(_value))
 	case 8: //Int64
 		_value, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			return nil, err
+			return ua.NewVariant(int64(0)) //nil, err
 		}
 		return ua.NewVariant(_value)
 	case 9: //UInt64
 		_value, err := strconv.ParseUint(value, 10, 64)
 		if err != nil {
-			return nil, err
+			return ua.NewVariant(uint64(0)) //nil, err
 		}
-		return ua.NewVariant(_value)
+		return ua.NewVariant(uint64(_value))
 	case 10: //Float
 		_value, err := strconv.ParseFloat(value, 32)
 		if err != nil {
-			return nil, err
+			return ua.NewVariant(0.0) //nil, err
 		}
 		return ua.NewVariant(float32(_value))
 	case 11: //Double
 		_value, err := strconv.ParseFloat(value, 64)
 		if err != nil {
-			return nil, err
+			return ua.NewVariant(0.0) //nil, err
 		}
 		return ua.NewVariant(_value)
 	case 12: //String

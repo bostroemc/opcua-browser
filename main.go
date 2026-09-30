@@ -124,6 +124,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.footer.Status = m.data.Status
 	m.footer.Path = m.address.Path
 	m.footer.Width = m.width
+	m.footer.EditMode = m.data.EditMode || m.overlaymethod.EditMode
 
 	m.overlaymethod, cmd[3] = m.overlaymethod.Update(msg)
 

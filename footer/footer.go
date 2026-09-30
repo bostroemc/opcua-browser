@@ -23,6 +23,8 @@ type Model struct {
 	DataPoint types.DataPoint
 
 	EditMode bool
+	Action   string
+	Message  string
 }
 
 func (m Model) Init() tea.Cmd {
@@ -32,15 +34,14 @@ func (m Model) Init() tea.Cmd {
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
-		if !m.EditMode {
+		if m.EditMode {
 			break
 		}
 		if keyAction, ok := types.KeyActions[msg.String()]; ok {
-			switch keyAction.Action {
-
-			case "select":
-			}
+			m.Action = keyAction.Action
+			m.Message = msg.String()
 		}
+
 	}
 
 	return m, nil
@@ -50,14 +51,17 @@ func (m Model) View() string {
 	path := footerStyle.Render(m.Path)
 	icon := symbolStyle.Render(m.Status)
 
+	action := debugStyle.Render(m.Action)
+	message := debugStyle.Render(m.Message)
+
 	endpoint := endpointStyle.Render(m.Endpoint)
 
-	gapWidth := m.Width - lipgloss.Width(path) - lipgloss.Width(endpoint) - lipgloss.Width(icon)
+	gapWidth := m.Width - lipgloss.Width(path) - lipgloss.Width(endpoint) - lipgloss.Width(icon) - lipgloss.Width(action) - lipgloss.Width(message)
 	if gapWidth < 0 {
 		gapWidth = 0
 	}
 	gap := strings.Repeat(" ", gapWidth)
-	return lipgloss.JoinHorizontal(lipgloss.Top, path, gap, icon, endpoint)
+	return lipgloss.JoinHorizontal(lipgloss.Top, path, action, message, gap, icon, endpoint)
 }
 
 var footerStyle = lipgloss.NewStyle().
@@ -74,5 +78,10 @@ var endpointStyle = lipgloss.NewStyle().
 var symbolStyle = lipgloss.NewStyle().
 	Background(lipgloss.Color("#333333")).
 	Foreground(lipgloss.Color("#FFFFFF")).
+	Padding(0, 1).
+	Align(lipgloss.Center)
+var debugStyle = lipgloss.NewStyle().
+	Background(lipgloss.Color("#FACF89")).
+	Foreground(lipgloss.Color("#181825")).
 	Padding(0, 1).
 	Align(lipgloss.Center)

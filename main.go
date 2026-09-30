@@ -11,6 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	address "github.com/bostroemc/tui/opcua-browser/address"
+	backend "github.com/bostroemc/tui/opcua-browser/backend"
 	data "github.com/bostroemc/tui/opcua-browser/data"
 	"github.com/bostroemc/tui/opcua-browser/footer"
 	"github.com/bostroemc/tui/opcua-browser/overlay"
@@ -38,7 +39,7 @@ type model struct {
 	width  int
 
 	cancel  context.CancelFunc
-	backend *ServiceOpcUa
+	backend *backend.ServiceOpcUa
 }
 
 func (m model) Init() tea.Cmd {
@@ -90,13 +91,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 
 			case "toggle_focus":
-				m.state = (m.state + 1) % 2
+				m.state = (m.state + 1) % 3
 			case "show_info":
 				m.info = true
 			case "hide_info":
 				m.info = false
 				m.method_popup = false
-				m.backend.Call(m.overlaymethod.Parent.NodeID, m.overlaymethod.Method.NodeID, m.overlaymethod.Data, m.overlaymethod.Values)
+				// m.backend.Call(m.overlaymethod.Parent.NodeID, m.overlaymethod.Method.NodeID, m.overlaymethod.Data, m.overlaymethod.Values)
 			}
 		}
 	case tea.WindowSizeMsg:
@@ -110,6 +111,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	//Distribute state (i.e. active window) to the underlying modules
 	m.address.Active = m.state
 	m.data.Active = m.state
+	m.overlaymethod.Active = m.state
 
 	var cmd [4]tea.Cmd
 
@@ -146,7 +148,7 @@ func (m model) View() tea.View {
 	}
 	if m.method_popup {
 		baseLayer := lipgloss.NewLayer(s.String()).ID("base")
-		overlaymethod := lipgloss.NewLayer(m.overlaymethod.View()).ID("overlaymethod").X(10).Y(3).Z(10)
+		overlaymethod := lipgloss.NewLayer(m.overlaymethod.View()).ID("overlaymethod").X(40).Y(3).Z(10)
 		compositor := lipgloss.NewCompositor(baseLayer, overlaymethod)
 		v := tea.NewView(compositor.Render())
 		v.AltScreen = true
@@ -172,7 +174,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 
 	// go opcuaClient(ctx, types.MyConfig, ch_browse, ch_read, ch_write)
-	backend := NewServiceOpcUa(ctx, types.MyConfig, ch_browse, ch_read, ch_write)
+	backend := backend.NewServiceOpcUa(ctx, types.MyConfig, ch_browse, ch_read, ch_write)
 	backend.Connect()
 
 	go backend.Run()
@@ -190,7 +192,7 @@ func main() {
 		data:          data.New(1, ch_read, ch_write, []types.DataPoint{}, types.MyConfig.UpdateRate),
 		footer:        footer.New(types.MyConfig.Server.Endpoint),
 		overlay:       overlay.New(),
-		overlaymethod: overlaymethod.New(),
+		overlaymethod: overlaymethod.New(2, backend),
 		cancel:        cancel,
 		backend:       backend,
 	}

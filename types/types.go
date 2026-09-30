@@ -236,6 +236,10 @@ func (c *Config) Init(username, password *string) {
 		c.Keybinds = append(c.Keybinds, Keybind{Action: "back", Keys: []string{"u"}})
 		KeyActions["u"] = KeyAction{Action: "back"}
 	}
+	if ok := c.checkKeybind("call"); !ok {
+		c.Keybinds = append(c.Keybinds, Keybind{Action: "call", Keys: []string{"ctrl+c"}})
+		KeyActions["ctrl+c"] = KeyAction{Action: "call"}
+	}
 
 	//Use username, password flags if supplied
 	if *username != "" {

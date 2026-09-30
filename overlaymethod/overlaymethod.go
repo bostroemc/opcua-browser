@@ -7,11 +7,12 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	_ "charm.land/lipgloss/v2"
+	"github.com/bostroemc/tui/opcua-browser/backend"
 	"github.com/bostroemc/tui/opcua-browser/types"
 	"github.com/gopcua/opcua/ua"
 )
 
-func New() Model {
+func New(id int, backend *backend.ServiceOpcUa) Model {
 	input := textinput.New()
 	input.Placeholder = ""
 	input.Prompt = "┃"
@@ -26,9 +27,11 @@ func New() Model {
 
 	return Model{
 		// Endpoint: endpoint,
-		Styles: types.DefaultStyles(),
-		Input:  input,
-		Width:  60,
+		Id:      id,
+		Styles:  types.DefaultStyles(),
+		Input:   input,
+		Width:   60,
+		backend: backend,
 	}
 }
 
@@ -48,11 +51,16 @@ type Model struct {
 	Show   bool
 	Input  textinput.Model
 
+	Id     int
+	Active int
+
 	EditMode bool
 	Height   int
 	Width    int
 	index    int
 	min, max int
+
+	backend *backend.ServiceOpcUa
 }
 
 func (m Model) Init() tea.Cmd {
@@ -62,22 +70,30 @@ func (m Model) Init() tea.Cmd {
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
+		if m.Active != m.Id {
+			m.EditMode = false
+			break
+		}
 		if keyAction, ok := types.KeyActions[msg.String()]; ok {
 			switch keyAction.Action {
 			case "escape":
 				m.Show = false
 			case "move_down":
-				m.index++
-				m.index = min(m.index, m.LineCount()-1)
-				m.SetMinMax(m.min, m.max)
+				if !m.EditMode {
+					m.index++
+					m.index = min(m.index, m.LineCount()-1)
+					m.SetMinMax(m.min, m.max)
+				}
 			case "move_up":
-				m.index--
-				m.index = max(m.index, 0)
-				m.SetMinMax(m.min, m.max)
+				if !m.EditMode {
+					m.index--
+					m.index = max(m.index, 0)
+					m.SetMinMax(m.min, m.max)
+				}
 			case "toggle_edit_mode":
 				m.EditMode = !m.EditMode
 				if m.EditMode {
-					// m.Input.SetValue(m.Data[m.index].String())
+					m.Input.SetValue(m.Values[m.index])
 				}
 			case "select":
 				if m.EditMode {
@@ -86,8 +102,9 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 					m.EditMode = false
 					m.Input.SetValue("")
 				}
-			case "ctrl+c":
-
+			case "call":
+				// fmt.Println(m.Parent.NodeID, m.Method.NodeID, m.Data, m.Values)
+				m.backend.Call(m.Parent.NodeID, m.Method.NodeID, m.Data, m.Values)
 			}
 		}
 	}
@@ -161,8 +178,11 @@ func (m Model) View() string {
 				}
 			}
 		}
+		if m.Active == m.Id {
+			return m.Styles.ActiveOverlay.Render(s.String())
+		}
 
-		return m.Styles.Overlay.Render(s.String()) // lipgloss.JoinHorizontal(lipgloss.Top, s.String())
+		return m.Styles.Overlay.Render(s.String())
 	}
 
 	return "----"

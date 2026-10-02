@@ -62,8 +62,6 @@ func (s *ServiceOpcUa) Connect() {
 		log.Println("Failed to connect to OPC UA server: ", err)
 	}
 
-	// defer s.Client.Close(s.ctx)
-
 }
 
 func (s *ServiceOpcUa) Run() {
@@ -170,138 +168,6 @@ func (s *ServiceOpcUa) Run() {
 
 }
 
-func opcuaClient(ctx context.Context, config types.Config, browse chan types.OpcUaBrowserData, read chan types.OpcUaReadData, write chan types.DataPoint) {
-	endpoints, err := opcua.GetEndpoints(ctx, config.Server.Endpoint)
-	if err != nil {
-		log.Println(err)
-	}
-	ep, err := opcua.SelectEndpoint(endpoints, config.Server.Policy, ua.MessageSecurityModeFromString(config.Server.Mode))
-	if err != nil {
-		log.Println("SelectEndpoint failed: ", err)
-		return
-	}
-	ep.EndpointURL = config.Server.Endpoint
-
-	opts := []opcua.Option{
-		opcua.SecurityPolicy(config.Server.Policy),
-		opcua.SecurityModeString(config.Server.Mode),
-		opcua.CertificateFile(config.Authorization.Certificate),
-		opcua.PrivateKeyFile(config.Authorization.Key),
-		opcua.AuthUsername(config.Authorization.Username, config.Authorization.Password),
-		opcua.SecurityFromEndpoint(ep, ua.UserTokenTypeUserName),
-		opcua.SessionTimeout(30 * time.Second),
-	}
-
-	c, err := opcua.NewClient(ep.EndpointURL, opts...)
-	if err != nil {
-		log.Println(err)
-	}
-	if err := c.Connect(ctx); err != nil {
-		log.Println("Failed to connect to OPC UA server: ", err)
-	}
-
-	defer c.Close(ctx)
-	var wg sync.WaitGroup
-
-	wg.Go(func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-
-			case a := <-browse:
-				if isActive(ctx, c) == false {
-					time.Sleep(1 * time.Second)
-				}
-
-				refs, err := c.Node(a.Node).ReferencedNodes(ctx, 0, ua.BrowseDirectionForward, ua.NodeClassAll, true)
-				if err != nil { //TODO handle error case; check whether error occurs in case there are no referenced nodes (i.e. there are no children)
-				}
-				var parent types.Node
-				attrs, _ := c.Node(a.Node).Attributes(ctx, ua.AttributeIDNodeID, ua.AttributeIDBrowseName, ua.AttributeIDDescription, ua.AttributeIDAccessLevel, ua.AttributeIDDataType)
-				parent = types.Node{NodeID: attrs[0].Value.NodeID(), BrowseName: attrs[1].Value.String(), Description: attrs[2].Value.String(), DataType: attrs[4].Value.String()}
-
-				var children []types.Node
-				for _, s := range refs {
-					attrs, _ := s.Attributes(ctx, ua.AttributeIDNodeID, ua.AttributeIDBrowseName, ua.AttributeIDDescription, ua.AttributeIDAccessLevel, ua.AttributeIDDataType, ua.AttributeIDNodeClass)
-					children = append(children, types.Node{NodeID: attrs[0].Value.NodeID(), BrowseName: attrs[1].Value.String(), Description: attrs[2].Value.String(), DataType: attrs[4].Value.String(), NodeClass: ua.NodeClass(attrs[5].Value.Int())})
-				}
-
-				browse <- types.OpcUaBrowserData{Parent: parent, Children: children}
-			}
-		}
-	})
-
-	//write
-	wg.Go(func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-
-			case x := <-write:
-
-				_temp := x.Node
-				id_1, _ := ua.ParseNodeID(_temp)
-				v, _ := ua.NewVariant(x.Pending)
-				req := &ua.WriteRequest{
-					NodesToWrite: []*ua.WriteValue{
-						{
-							NodeID:      id_1,
-							AttributeID: ua.AttributeIDValue,
-							Value: &ua.DataValue{
-								EncodingMask: ua.DataValueValue,
-								Value:        v,
-							},
-						},
-					},
-				}
-				if c.State() != opcua.Connected {
-					continue
-				}
-				_, err := c.Write(ctx, req)
-				if err != nil {
-					log.Println(err)
-				}
-			}
-		}
-	})
-
-	wg.Go(func() {
-		var resp *ua.ReadResponse
-		for {
-			select {
-			case <-ctx.Done():
-				return
-
-			case a := <-read:
-
-				var Nodes []*ua.ReadValueID
-				for _, d := range a.Data {
-					_id, _ := ua.ParseNodeID(d.Node)
-					Nodes = append(Nodes, &ua.ReadValueID{NodeID: _id})
-				}
-
-				if len(Nodes) > 0 {
-					req := ua.ReadRequest{NodesToRead: Nodes}
-
-					resp, err = c.Read(ctx, &req)
-					if err != nil {
-						read <- types.OpcUaReadData{}
-						continue
-					}
-					for i, r := range resp.Results {
-						a.Data[i].Value = r.Value.Value()
-					}
-				}
-				read <- a
-			}
-		}
-	})
-
-	wg.Wait()
-}
-
 func isActive(ctx context.Context, client *opcua.Client) bool {
 	path := "i=84" //"ns=8;s=plc/app/Application/sym"
 	node, _ := ua.ParseNodeID(path)
@@ -321,7 +187,8 @@ func (d DynamicBinaryStruct) Encode() ([]byte, error) {
 func (s *ServiceOpcUa) Call(objectID, methodID *ua.NodeID, data []types.OpcUaInputArgumentData, values []string) (*ua.CallMethodResult, error) {
 	var inputArguments []*ua.Variant
 
-	for i, o := range data {
+	i := 0
+	for _, o := range data {
 		arg, _ := o.ExtensionObject.Value.(*ua.Argument)
 
 		if arg.DataType.Namespace() == 0 {
@@ -332,7 +199,10 @@ func (s *ServiceOpcUa) Call(objectID, methodID *ua.NodeID, data []types.OpcUaInp
 		if arg.DataType.Namespace() != 0 {
 			v, _ := getExtension(values, i, arg, o.StructureDefinition, o.BinaryEncodingID)
 			inputArguments = append(inputArguments, v)
+
+			i += len(o.StructureDefinition.Fields)
 		}
+		i++
 	}
 
 	req := &ua.CallMethodRequest{
@@ -398,89 +268,42 @@ func EncodeDynamicStruct(fields []*ua.StructureField, inputData map[string]inter
 	return buf.Bytes(), nil
 }
 
-// func CallMethodWithDynamicStruct(
-// 	ctx context.Context,
-// 	client *opcua.Client,
-// 	objectID *ua.NodeID,
-// 	methodID *ua.NodeID,
-// 	binaryEncodingID *ua.NodeID, // The "Default Binary" NodeID (e.g., ns=5;i=XXXX)
-// 	fields []*ua.StructureField,
-// 	inputData map[string]interface{},
-// 	inputArguments []*ua.Variant,
-// ) error {
-//
-// 	// 1. Generate the sequential, raw binary footprint
-// 	rawBytes, err := EncodeDynamicStruct(fields, inputData)
-// 	if err != nil {
-// 		return fmt.Errorf("failed to encode dynamic struct: %w", err)
-// 	}
-//
-// 	// 2. Wrap the payload manually into an unparsed Binary ExtensionObject container
-// 	extObj := &ua.ExtensionObject{
-// 		TypeID:       &ua.ExpandedNodeID{NodeID: binaryEncodingID}, // Links the raw payload back to its schema context
-// 		EncodingMask: ua.ExtensionObjectBinary,                     // Crucial: Tells the server this is a raw byte stream
-// 		Value:        DynamicBinaryStruct{RawBytes: rawBytes},      // Populates the raw structure body
-// 	}
-//
-// 	t, _ := ua.NewVariant(extObj)
-//
-// 	inputArguments = append(inputArguments, t)
-//
-// 	req := &ua.CallMethodRequest{
-// 		ObjectID:       objectID,
-// 		MethodID:       methodID,
-// 		InputArguments: inputArguments, // Nest the extension object into the generic Variant parameter
-// 	}
-//
-// 	// 4. Send execution package straight to the CODESYS runtime engine
-// 	resp, err := client.Call(ctx, req)
-// 	if err != nil {
-// 		return fmt.Errorf("network call transaction failed: %w", err)
-// 	}
-//
-// 	if resp.StatusCode != ua.StatusOK {
-// 		return fmt.Errorf("CODESYS rejected method call invocation: %s", resp.StatusCode.Error())
-// 	}
-//
-// 	return nil
-// }
-
 // // Maps standard Namespace 0 core type NodeIDs to human-readable labels
-func resolveDataType(id *ua.NodeID) string {
-	if id.Namespace() != 0 {
-		return "Custom Type / Structure"
-	}
-	switch id.IntID() {
-	case 1:
-		return "Boolean"
-	case 2:
-		return "SByte"
-	case 3:
-		return "Byte"
-	case 4:
-		return "Int16"
-	case 5:
-		return "UInt16"
-	case 6:
-		return "Int32"
-	case 7:
-		return "UInt32"
-	case 8:
-		return "Int64"
-	case 9:
-		return "UInt64"
-	case 10:
-		return "Float"
-	case 11:
-		return "Double"
-	case 12:
-		return "String"
-	case 15:
-		return "ByteString"
-	default:
-		return "Complex/Other"
-	}
-}
+// func resolveDataType(id *ua.NodeID) string {
+// 	if id.Namespace() != 0 {
+// 		return "Custom Type / Structure"
+// 	}
+// 	switch id.IntID() {
+// 	case 1:
+// 		return "Boolean"
+// 	case 2:
+// 		return "SByte"
+// 	case 3:
+// 		return "Byte"
+// 	case 4:
+// 		return "Int16"
+// 	case 5:
+// 		return "UInt16"
+// 	case 6:
+// 		return "Int32"
+// 	case 7:
+// 		return "UInt32"
+// 	case 8:
+// 		return "Int64"
+// 	case 9:
+// 		return "UInt64"
+// 	case 10:
+// 		return "Float"
+// 	case 11:
+// 		return "Double"
+// 	case 12:
+// 		return "String"
+// 	case 15:
+// 		return "ByteString"
+// 	default:
+// 		return "Complex/Other"
+// 	}
+// }
 
 func (s *ServiceOpcUa) FindBinaryEncodingID(dataTypeID *ua.NodeID) (*ua.NodeID, error) {
 	browseReq := &ua.BrowseRequest{
@@ -524,7 +347,7 @@ func (s *ServiceOpcUa) GetInputArguments(methodID *ua.NodeID) ([]*ua.ExtensionOb
 
 	methodNode := s.Client.Node(methodID)
 
-	// 2. Fetch all child references of this method node
+	// Fetch all child references of this method node
 	children, err := methodNode.Children(s.ctx, 0, ua.NodeClassVariable)
 	if err != nil {
 		log.Fatalf("Failed to browse method child nodes: %v", err)
@@ -532,7 +355,7 @@ func (s *ServiceOpcUa) GetInputArguments(methodID *ua.NodeID) ([]*ua.ExtensionOb
 
 	var inArgsNodeID *ua.NodeID
 
-	// 3. Loop through children to look for the "InputArguments" node
+	// Loop through children to look for the "InputArguments" node
 	for _, child := range children {
 		browseName, err := child.BrowseName(s.ctx)
 		if err != nil {
@@ -550,13 +373,13 @@ func (s *ServiceOpcUa) GetInputArguments(methodID *ua.NodeID) ([]*ua.ExtensionOb
 		log.Fatal("Could not find an InputArguments child node for this method. Does it take any parameters?")
 	}
 
-	// 4. Read the raw data variant from the discovered InputArguments node
+	// Read the raw data variant from the discovered InputArguments node
 	variantValue, err := s.Client.Node(inArgsNodeID).Value(s.ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// 5. Cast the underlying data into an ExtensionObject slice
+	// Cast the underlying data into an ExtensionObject slice
 	extObjects, ok := variantValue.Value().([]*ua.ExtensionObject)
 	if !ok {
 		return nil, nil
@@ -677,7 +500,7 @@ func getExtension(values []string, index int, arg *ua.Argument, typeDef *ua.Stru
 	i := index + 1
 	for _, field := range typeDef.Fields {
 		value := values[i]
-		if field.DataType.String() == "i=6" {
+		if field.DataType.IntID() == 6 {
 			p, _ := strconv.ParseInt(value, 10, 32)
 			inputData[field.Name] = int32(p)
 		}
@@ -689,6 +512,81 @@ func getExtension(values []string, index int, arg *ua.Argument, typeDef *ua.Stru
 		if field.DataType.String() == "i=12" {
 			inputData[field.Name] = value
 		}
+		switch field.DataType.IntID() {
+		case 1: //Boolean
+			_value, err := strconv.ParseBool(value)
+			if err != nil {
+				inputData[field.Name] = false
+			}
+			inputData[field.Name] = _value
+		case 2: //SByte
+			_value, err := strconv.ParseUint(value, 10, 8)
+			if err != nil {
+				inputData[field.Name] = uint8(0)
+			}
+			inputData[field.Name] = uint8(_value)
+		case 3: //Byte
+			_value, err := strconv.ParseUint(value, 10, 8)
+			if err != nil {
+				inputData[field.Name] = byte(0)
+			}
+			inputData[field.Name] = byte(_value)
+		case 4: //Int16
+			_value, err := strconv.ParseInt(value, 10, 16)
+			if err != nil {
+				inputData[field.Name] = int16(0)
+			}
+			inputData[field.Name] = int16(_value)
+		case 5: //UInt16
+			_value, err := strconv.ParseUint(value, 10, 16)
+			if err != nil {
+				inputData[field.Name] = uint16(0)
+			}
+			inputData[field.Name] = uint16(_value)
+		case 6: //Int32
+			_value, err := strconv.ParseInt(value, 10, 32)
+			if err != nil {
+				inputData[field.Name] = int32(0)
+			}
+			inputData[field.Name] = int32(_value)
+		case 7: //UInt32
+			_value, err := strconv.ParseUint(value, 10, 32)
+			if err != nil {
+				inputData[field.Name] = uint32(0)
+			}
+			inputData[field.Name] = uint32(_value)
+		case 8: //Int64
+			_value, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				inputData[field.Name] = int64(0)
+			}
+			inputData[field.Name] = _value
+		case 9: //UInt64
+			_value, err := strconv.ParseUint(value, 10, 64)
+			if err != nil {
+				inputData[field.Name] = uint64(0)
+			}
+			inputData[field.Name] = uint64(_value)
+		case 10: //Float
+			_value, err := strconv.ParseFloat(value, 32)
+			if err != nil {
+				inputData[field.Name] = float32(0)
+			}
+			inputData[field.Name] = float32(_value)
+		case 11: //Double
+			_value, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				inputData[field.Name] = float64(0.0)
+			}
+			inputData[field.Name] = _value
+		case 12: //String
+			inputData[field.Name] = value
+		case 15: //ByteString
+			inputData[field.Name] = []byte(value)
+		default:
+			inputData[field.Name] = ""
+		}
+
 		i++
 	}
 

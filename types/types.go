@@ -50,6 +50,12 @@ func (d DataPoint) String() string {
 	case int64:
 		s = strconv.FormatInt(d.Value.(int64), 10)
 
+	case uint32:
+		s = strconv.FormatUint(uint64(d.Value.(uint32)), 10)
+
+	case uint64:
+		s = strconv.FormatUint(d.Value.(uint64), 10)
+
 	case float32:
 		s = strconv.FormatFloat(float64(d.Value.(float32)), 'f', 3, 32)
 

@@ -74,7 +74,7 @@ func (s *ServiceOpcUa) Run() {
 				return
 
 			case a := <-s.browse:
-				if isActive(s.ctx, s.Client) == false {
+				if s.isActive() == false {
 					time.Sleep(1 * time.Second)
 				}
 
@@ -168,11 +168,11 @@ func (s *ServiceOpcUa) Run() {
 
 }
 
-func isActive(ctx context.Context, client *opcua.Client) bool {
+func (s *ServiceOpcUa) isActive() bool {
 	path := "i=84" //"ns=8;s=plc/app/Application/sym"
 	node, _ := ua.ParseNodeID(path)
 
-	refs, _ := client.Node(node).ReferencedNodes(ctx, 0, ua.BrowseDirectionForward, ua.NodeClassAll, true)
+	refs, _ := s.Client.Node(node).ReferencedNodes(s.ctx, 0, ua.BrowseDirectionForward, ua.NodeClassAll, true)
 	return len(refs) >= 1
 }
 
@@ -341,7 +341,7 @@ func (s *ServiceOpcUa) FindBinaryEncodingID(dataTypeID *ua.NodeID) (*ua.NodeID, 
 // func getInputArguments(ctx context.Context, client *opcua.Client, methodID *ua.NodeID) ([]*ua.ExtensionObject, error) {
 func (s *ServiceOpcUa) GetInputArguments(methodID *ua.NodeID) ([]*ua.ExtensionObject, error) {
 
-	if isActive(s.ctx, s.Client) == false {
+	if s.isActive() == false {
 		time.Sleep(1 * time.Second)
 	}
 
@@ -500,18 +500,7 @@ func getExtension(values []string, index int, arg *ua.Argument, typeDef *ua.Stru
 	i := index + 1
 	for _, field := range typeDef.Fields {
 		value := values[i]
-		if field.DataType.IntID() == 6 {
-			p, _ := strconv.ParseInt(value, 10, 32)
-			inputData[field.Name] = int32(p)
-		}
-		if field.DataType.String() == "i=1" {
-			b, _ := strconv.ParseBool(value)
 
-			inputData[field.Name] = b
-		}
-		if field.DataType.String() == "i=12" {
-			inputData[field.Name] = value
-		}
 		switch field.DataType.IntID() {
 		case 1: //Boolean
 			_value, err := strconv.ParseBool(value)

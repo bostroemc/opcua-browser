@@ -165,7 +165,6 @@ func (s *ServiceOpcUa) Run() {
 	wg.Wait()
 
 	defer s.Client.Close(s.ctx)
-
 }
 
 func (s *ServiceOpcUa) isActive() bool {
@@ -185,24 +184,35 @@ func (d DynamicBinaryStruct) Encode() ([]byte, error) {
 }
 
 func (s *ServiceOpcUa) Call(objectID, methodID *ua.NodeID, data []types.OpcUaInputArgumentData, values []string) (*ua.CallMethodResult, error) {
+	objects, _ := s.GetInputArguments(methodID)
 	var inputArguments []*ua.Variant
-
 	i := 0
-	for _, o := range data {
-		arg, _ := o.ExtensionObject.Value.(*ua.Argument)
+
+	for _, o := range objects {
+		arg, _ := o.Value.(*ua.Argument)
 
 		if arg.DataType.Namespace() == 0 {
-			v, _ := getVariant(values[i], arg)
-			inputArguments = append(inputArguments, v)
+			tmp, _ := getVariant(values[i], arg)
+			inputArguments = append(inputArguments, tmp)
+			i++
 		}
 
 		if arg.DataType.Namespace() != 0 {
-			v, _ := getExtension(values, i, arg, o.StructureDefinition, o.BinaryEncodingID)
-			inputArguments = append(inputArguments, v)
 
-			i += len(o.StructureDefinition.Fields)
+			buf := ua.NewBuffer(nil)
+			typeDef, _ := s.GetStructureDefinition(arg.DataType)
+			binaryEncodingID, _ := s.FindBinaryEncodingID(arg.DataType)
+
+			s.GetExtension(values, &i, arg, typeDef, binaryEncodingID, buf)
+
+			extObj := &ua.ExtensionObject{
+				TypeID:       &ua.ExpandedNodeID{NodeID: binaryEncodingID},
+				EncodingMask: ua.ExtensionObjectBinary, // Raw byte stream
+				Value:        DynamicBinaryStruct{RawBytes: buf.Bytes()},
+			}
+			tmp, _ := ua.NewVariant(extObj)
+			inputArguments = append(inputArguments, tmp)
 		}
-		i++
 	}
 
 	req := &ua.CallMethodRequest{
@@ -425,11 +435,11 @@ func getVariant(value string, arg *ua.Argument) (*ua.Variant, error) {
 		}
 		return ua.NewVariant(_value)
 	case 2: //SByte
-		_value, err := strconv.ParseUint(value, 10, 8)
+		_value, err := strconv.ParseInt(value, 10, 8)
 		if err != nil {
-			return ua.NewVariant(uint8(0)) //nil, err
+			return ua.NewVariant(int8(0)) //nil, err
 		}
-		return ua.NewVariant(uint8(_value))
+		return ua.NewVariant(int8(_value))
 	case 3: //Byte
 		_value, err := strconv.ParseUint(value, 10, 8)
 		if err != nil {
@@ -494,103 +504,94 @@ func getVariant(value string, arg *ua.Argument) (*ua.Variant, error) {
 
 }
 
-func getExtension(values []string, index int, arg *ua.Argument, typeDef *ua.StructureDefinition, encoding *ua.NodeID) (*ua.Variant, error) {
-
-	inputData := make(map[string]interface{})
-	i := index + 1
+func (s *ServiceOpcUa) GetExtension(values []string, index *int, arg *ua.Argument, typeDef *ua.StructureDefinition, encoding *ua.NodeID, buf *ua.Buffer) error {
+	value := ""
+	i := *index + 1
 	for _, field := range typeDef.Fields {
-		value := values[i]
+
+		if i > len(values) {
+			return fmt.Errorf("Index out of range")
+		}
+		value = values[i]
 
 		switch field.DataType.IntID() {
-		case 1: //Boolean
-			_value, err := strconv.ParseBool(value)
-			if err != nil {
-				inputData[field.Name] = false
-			}
-			inputData[field.Name] = _value
-		case 2: //SByte
-			_value, err := strconv.ParseUint(value, 10, 8)
-			if err != nil {
-				inputData[field.Name] = uint8(0)
-			}
-			inputData[field.Name] = uint8(_value)
-		case 3: //Byte
-			_value, err := strconv.ParseUint(value, 10, 8)
-			if err != nil {
-				inputData[field.Name] = byte(0)
-			}
-			inputData[field.Name] = byte(_value)
-		case 4: //Int16
-			_value, err := strconv.ParseInt(value, 10, 16)
-			if err != nil {
-				inputData[field.Name] = int16(0)
-			}
-			inputData[field.Name] = int16(_value)
-		case 5: //UInt16
-			_value, err := strconv.ParseUint(value, 10, 16)
-			if err != nil {
-				inputData[field.Name] = uint16(0)
-			}
-			inputData[field.Name] = uint16(_value)
-		case 6: //Int32
-			_value, err := strconv.ParseInt(value, 10, 32)
-			if err != nil {
-				inputData[field.Name] = int32(0)
-			}
-			inputData[field.Name] = int32(_value)
-		case 7: //UInt32
-			_value, err := strconv.ParseUint(value, 10, 32)
-			if err != nil {
-				inputData[field.Name] = uint32(0)
-			}
-			inputData[field.Name] = uint32(_value)
-		case 8: //Int64
-			_value, err := strconv.ParseInt(value, 10, 64)
-			if err != nil {
-				inputData[field.Name] = int64(0)
-			}
-			inputData[field.Name] = _value
-		case 9: //UInt64
-			_value, err := strconv.ParseUint(value, 10, 64)
-			if err != nil {
-				inputData[field.Name] = uint64(0)
-			}
-			inputData[field.Name] = uint64(_value)
-		case 10: //Float
-			_value, err := strconv.ParseFloat(value, 32)
-			if err != nil {
-				inputData[field.Name] = float32(0)
-			}
-			inputData[field.Name] = float32(_value)
-		case 11: //Double
-			_value, err := strconv.ParseFloat(value, 64)
-			if err != nil {
-				inputData[field.Name] = float64(0.0)
-			}
-			inputData[field.Name] = _value
-		case 12: //String
-			inputData[field.Name] = value
-		case 15: //ByteString
-			inputData[field.Name] = []byte(value)
+		case 1: // Boolean
+			b, _ := strconv.ParseBool(value) //TODO: Add error handling
+			buf.WriteBool(b)
+			i++
+		case 2: // SByte
+			b, _ := strconv.ParseInt(value, 10, 8)
+			buf.WriteInt8(int8(b))
+			i++
+		case 3: // Byte
+			b, _ := strconv.ParseUint(value, 10, 8)
+			buf.WriteByte(uint8(b))
+			i++
+		case 4: // Int16
+			b, _ := strconv.ParseInt(value, 10, 16)
+			buf.WriteInt16(int16(b))
+			i++
+		case 5: // UInt16
+			b, _ := strconv.ParseUint(value, 10, 16)
+			buf.WriteUint16(uint16(b))
+			i++
+		case 6: // Int32
+			b, _ := strconv.ParseInt(value, 10, 32)
+			buf.WriteInt32(int32(b))
+			i++
+		case 7: // UInt32
+			b, _ := strconv.ParseUint(value, 10, 32)
+			buf.WriteUint32(uint32(b))
+			i++
+		case 8: // Int64
+			b, _ := strconv.ParseInt(value, 10, 64)
+			buf.WriteInt64(int64(b))
+			i++
+		case 9: // UInt64
+			b, _ := strconv.ParseUint(value, 10, 64)
+			buf.WriteUint64(uint64(b))
+			i++
+		case 10: // Float
+			b, _ := strconv.ParseFloat(value, 32)
+			buf.WriteFloat32(float32(b))
+			i++
+		case 11: // Double
+			b, _ := strconv.ParseFloat(value, 64)
+			buf.WriteFloat64(float64(b))
+			i++
+		case 12: // String
+			buf.WriteString(value)
+			i++
 		default:
-			inputData[field.Name] = ""
+			typeDef, _ := s.GetStructureDefinition(field.DataType)
+			binaryEncodingID, _ := s.FindBinaryEncodingID(field.DataType)
+
+			s.GetExtension(values, &i, arg, typeDef, binaryEncodingID, buf)
 		}
-
-		i++
 	}
 
-	rawBytes, err := EncodeDynamicStruct(typeDef.Fields, inputData)
-	if err != nil {
-		fmt.Errorf("failed to encode dynamic struct: %w", err)
+	*index = i
+	return nil
+}
+
+func (s *ServiceOpcUa) GetRootField(fields *[]string, arg *ua.Argument) error {
+	*fields = append(*fields, arg.Name)
+	return nil
+}
+
+func (s *ServiceOpcUa) GetFields(fields *[]string, level *int32, arg *ua.Argument, typeDef *ua.StructureDefinition, encoding *ua.NodeID) error {
+
+	for _, field := range typeDef.Fields {
+		if field.DataType.Namespace() == 0 {
+			*fields = append(*fields, fmt.Sprintf("%*s %s", *level, "", field.Name))
+		} else {
+			*fields = append(*fields, fmt.Sprintf("%*s %s", *level, "", field.Name))
+			typeDef, _ := s.GetStructureDefinition(field.DataType)
+			binaryEncodingID, _ := s.FindBinaryEncodingID(field.DataType)
+			*level += 2
+			s.GetFields(fields, level, arg, typeDef, binaryEncodingID)
+			*level -= 2
+		}
 	}
-
-	// 2. Wrap the payload manually into an unparsed Binary ExtensionObject container
-	extObj := &ua.ExtensionObject{
-		TypeID:       &ua.ExpandedNodeID{NodeID: encoding},    // Links the raw payload back to its schema context
-		EncodingMask: ua.ExtensionObjectBinary,                // Crucial: Tells the server this is a raw byte stream
-		Value:        DynamicBinaryStruct{RawBytes: rawBytes}, // Populates the raw structure body
-	}
-
-	return ua.NewVariant(extObj)
-
+	return nil
 }

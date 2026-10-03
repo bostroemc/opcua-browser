@@ -70,20 +70,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.method_popup = true
 						objects, _ := m.backend.GetInputArguments(m.address.ActiveNode().NodeID)
 						m.overlaymethod.Data = nil
-						count := 0
-						for i, o := range objects {
+						m.overlaymethod.Fields = nil
+						var level int32
 
+						for _, o := range objects {
 							arg, _ := o.Value.(*ua.Argument)
-							m.overlaymethod.Data = append(m.overlaymethod.Data, types.OpcUaInputArgumentData{ExtensionObject: o})
-							count++
+							level = 0
+							m.backend.GetRootField(&m.overlaymethod.Fields, arg)
 							if arg.DataType.Namespace() != 0 {
-								m.overlaymethod.Data[i].StructureDefinition, _ = m.backend.GetStructureDefinition(arg.DataType)
-								m.overlaymethod.Data[i].BinaryEncodingID, _ = m.backend.FindBinaryEncodingID(arg.DataType)
-								count += len(m.overlaymethod.Data[i].StructureDefinition.Fields)
-							}
 
+								typeDef, _ := m.backend.GetStructureDefinition(arg.DataType)
+								binaryEncodingID, _ := m.backend.FindBinaryEncodingID(arg.DataType)
+								level += 1
+								m.backend.GetFields(&m.overlaymethod.Fields, &level, arg, typeDef, binaryEncodingID)
+
+							}
 						}
-						m.overlaymethod.Values = make([]string, count)
+						m.overlaymethod.Values = make([]string, len(m.overlaymethod.Fields))
 						m.overlaymethod.Parent = m.address.Parent
 						m.overlaymethod.Method = m.address.ActiveNode()
 						m.state = 2

@@ -46,6 +46,7 @@ type Model struct {
 	Method types.Node
 
 	Data   []types.OpcUaInputArgumentData
+	Fields []string
 	Values []string
 	Styles types.Styles
 	Show   bool
@@ -81,7 +82,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			case "move_down":
 				if !m.EditMode {
 					m.index++
-					m.index = min(m.index, m.LineCount()-1)
+					m.index = min(m.index, len(m.Fields)-1)
 					m.SetMinMax(m.min, m.max)
 				}
 			case "move_up":
@@ -123,14 +124,11 @@ func (m Model) View() string {
 	if m.Show || true {
 
 		var s strings.Builder
-		i := 0
-		for _, o := range m.Data {
+		for i, o := range m.Fields {
 
-			arg, _ := o.ExtensionObject.Value.(*ua.Argument)
-			node := nodeStyle.Render(arg.Name)
-			value := ""
-
-			value = valueStyle.Render(m.Values[i])
+			// arg, _ := o.ExtensionObject.Value.(*ua.Argument)
+			node := nodeStyle.Render(o)
+			value := valueStyle.Render(m.Values[i])
 
 			if m.index == i && m.EditMode {
 				value = m.Input.View()
@@ -148,34 +146,6 @@ func (m Model) View() string {
 			} else {
 				s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, node, gap, value) + "\n")
 			}
-			i++
-			if arg.DataType.Namespace() != 0 {
-				for _, field := range o.StructureDefinition.Fields {
-					node := nodeStyle.Render(field.Name)
-					value := ""
-
-					value = valueStyle.Render(m.Values[i])
-
-					if m.index == i && m.EditMode {
-						value = m.Input.View()
-					}
-
-					gapWidth := m.Width - lipgloss.Width(node) - lipgloss.Width(value) - 4
-					if gapWidth < 0 {
-						gapWidth = 0
-					}
-					gap := strings.Repeat(" ", gapWidth)
-
-					if m.index == i {
-						s.WriteString(m.Styles.Index.Render(lipgloss.JoinHorizontal(lipgloss.Top, "  ", node, gap, value)) + "\n")
-
-					} else {
-						s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, "  ", node, gap, value) + "\n")
-					}
-
-					i++
-				}
-			}
 		}
 		if m.Active == m.Id {
 			m.Styles.ActiveBody = m.Styles.ActiveBody.Width(m.Width).Height(m.Height)
@@ -192,7 +162,7 @@ func (m *Model) SetMinMax(minimum, maximum int) { //TODO: Improve recalculation 
 	if m.index < minimum {
 		m.min = m.index
 		m.max = m.index + m.Height - 4
-		m.max = min(m.max, len(m.Data)-1)
+		m.max = min(m.max, len(m.Fields)-1)
 	}
 	if m.index > maximum {
 		m.max = m.index

@@ -147,6 +147,10 @@ func (m Model) View() string {
 				s.WriteString(lipgloss.JoinHorizontal(lipgloss.Top, node, gap, value) + "\n")
 			}
 		}
+		if s.Len() == 0 {
+			s.WriteString("no input arguments")
+		}
+
 		if m.Active == m.Id {
 			m.Styles.ActiveBody = m.Styles.ActiveBody.Width(m.Width).Height(m.Height)
 			return lipgloss.JoinVertical(lipgloss.Left, m.Styles.ActiveTitle.Render(" "+m.Method.BrowseName), m.Styles.ActiveBody.Render(s.String()))
